@@ -17,6 +17,8 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+
 import com.alibaba.fastjson2.JSON;
 import com.bumptech.glide.Glide;
 import com.zjfgh.bluedhook.simple.module.LiveChattingModelMsgExtra;
@@ -708,6 +710,38 @@ public class PlayingOnLiveBaseModeFragmentHook {
             @Override
             protected void afterHookedMethod(MethodHookParam param) throws Throwable {
                 super.afterHookedMethod(param);
+            }
+        });
+        XposedHelpers.findAndHookMethod("com.blued.android.module.live_china.view.UserCardDialogFragment", classLoader, "J", new XC_MethodHook() {
+            @Override
+            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                super.beforeHookedMethod(param);
+            }
+
+            @Override
+            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                super.afterHookedMethod(param);
+                Object userCardDialogFragment = param.thisObject;
+                Object liveRoomUserModel = XposedHelpers.getObjectField(userCardDialogFragment, "m");
+                String relationship = (String) XposedHelpers.getObjectField(liveRoomUserModel, "relationship");
+                if (relationship.equals("8")) {
+                    XposedHelpers.setObjectField(liveRoomUserModel, "relationship", "0");
+                    TextView tv_attentionView = getTextView(userCardDialogFragment);
+                    tv_attentionView.setText("此用户已将你拉黑");
+                }
+
+            }
+
+            @NonNull
+            private TextView getTextView(Object userCardDialogFragment) {
+                Object layoutUserCardDialogBinding = XposedHelpers.callMethod(userCardDialogFragment, "u");
+                View J = (View) XposedHelpers.getObjectField(layoutUserCardDialogBinding, "J");
+                View r = (View) XposedHelpers.getObjectField(layoutUserCardDialogBinding, "r");
+                View G = (View) XposedHelpers.getObjectField(layoutUserCardDialogBinding, "G");
+                J.setVisibility(View.VISIBLE);
+                r.setVisibility(View.VISIBLE);
+                G.setVisibility(View.VISIBLE);
+                return (TextView) XposedHelpers.getObjectField(layoutUserCardDialogBinding, "E");
             }
         });
     }

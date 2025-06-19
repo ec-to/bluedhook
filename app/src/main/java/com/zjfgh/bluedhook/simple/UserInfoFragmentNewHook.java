@@ -97,6 +97,7 @@ public class UserInfoFragmentNewHook {
                     private final GradientDrawable defaultBackground = createGradientDrawable(COLOR_PRIMARY);
                     private final GradientDrawable activeBackground = createGradientDrawable(COLOR_SECONDARY);
                     TagLayout tlTitle;
+                    String relationship;
 
                     @SuppressLint("UseCompatLoadingForDrawables")
                     @Override
@@ -109,6 +110,7 @@ public class UserInfoFragmentNewHook {
                         ViewGroup flow_my_vip_tags = flFeedFragmentContainer.findViewById(flow_my_vip_tagsId);
                         flow_my_vip_tags.setVisibility(View.VISIBLE);
                         tlTitle = new TagLayout(flFeedFragmentContainer.getContext());
+                        tlTitle.setFirstMarginStartSize(0);
                         NetworkManager.getInstance().getAsync(NetworkManager.getBluedPicSaveStatusApi(uid), AuthManager.auHook(false, classLoader, getSafeContext()), new Callback() {
                             @Override
                             public void onFailure(@NonNull Call call, @NonNull IOException e) {
@@ -151,6 +153,17 @@ public class UserInfoFragmentNewHook {
                         }
                         tlTitle.addTextView("保存图片去水印", 9, modRes.getDrawable(R.drawable.bg_rounded, null));
                         flow_my_vip_tags.addView(tlTitle);
+                        //拉黑检测
+                        relationship = (String) XposedHelpers.getObjectField(userInfoEntity, "relationship");
+                        if (relationship != null && relationship.equals("8")) {
+                            XposedHelpers.setObjectField(userInfoEntity, "relationship", "0");
+                            Object userInfoFragmentNew = param.thisObject;
+                            View ll_in_blackView = (View) XposedHelpers.getObjectField(userInfoFragmentNew, "Y");
+                            TextView tv_be_blockedView = (TextView) XposedHelpers.getObjectField(userInfoFragmentNew, "M");
+                            ll_in_blackView.setVisibility(View.VISIBLE);
+                            tv_be_blockedView.setVisibility(View.VISIBLE);
+                            tv_be_blockedView.setText("此用户已将你拉黑");
+                        }
                     }
 
                     @SuppressLint({"UseCompatLoadingForDrawables", "SetTextI18n"})
@@ -491,6 +504,7 @@ public class UserInfoFragmentNewHook {
                                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
                                 String formattedDate = sdf.format(new Date(Long.parseLong(registrationTime) * 1000L));
                                 tvUserRegTime.setText("注册时间：" + formattedDate);
+                                tvUserRegTime.setOnClickListener(v -> ModuleTools.copyToClipboard(contextRef.get(), "注册时间" + formattedDate, formattedDate));
                                 tvUserRegTime.setTextSize(13f);
                                 tvUserRegTime.setVisibility(View.VISIBLE);
                             } else {
