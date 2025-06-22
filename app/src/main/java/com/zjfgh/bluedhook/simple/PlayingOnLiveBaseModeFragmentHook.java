@@ -485,71 +485,71 @@ public class PlayingOnLiveBaseModeFragmentHook {
                                     Log.d("BluedHook", jsonObject.toString());
                                     BluedHook.wsServerManager.broadcastMessage(jsonObject.toString());
                                 }
-                                LiveMessageParser liveMessageParser = new LiveMessageParser();
-                                LiveMessageParser.ParseResult parseResult = liveMessageParser.parse(contents);
-                                Log.i("BluedHook", "飘屏类型 -> " + parseResult.getMessageType() + "|" + parseResult.getCharSequence() + "|" + parseResult.getKeywords().toString());
-                                if (parseResult.getMessageType() == LiveMessageParser.MessageType.MULTIPLIER_REWARD) {
-                                    // 只有关键字是3个的时候，才是倍数奖励飘屏
-                                    if (parseResult.getKeywords().size() == 3) {
-                                        // 处理倍数奖励飘屏
-                                        String rewardMultiplier = parseResult.getKeywords().get(1);
-                                        String rewardBean = parseResult.getKeywords().get(2);
-                                        //计算幸运礼物本身的价值
-                                        int LuckyGiftsBean = Integer.parseInt(rewardBean) / Integer.parseInt(rewardMultiplier);
-                                        switch (LuckyGiftsBean) {
-                                            case 4:
-                                                //幸运手镯
-                                                ModuleTools.writeFile("抽奖_幸运手镯_飘屏记录.txt", parseResult.getCharSequence());
-                                                Log.e("BluedHook", "抽奖_幸运手镯_飘屏记录：" + parseResult.getCharSequence());
-                                                break;
-                                            case 12:
-                                                //幸运魔法棒
-                                                ModuleTools.writeFile("抽奖_幸运魔法棒_飘屏记录.txt", parseResult.getCharSequence());
-                                                Log.e("BluedHook", "抽奖_幸运魔法棒_飘屏记录：" + parseResult.getCharSequence());
-                                                break;
-                                            case 36:
-                                                //幸运魔镜
-                                                ModuleTools.writeFile("抽奖_幸运魔镜_飘屏记录.txt", parseResult.getCharSequence());
-                                                Log.e("BluedHook", "抽奖_幸运魔镜_飘屏记录：" + parseResult.getCharSequence());
-                                                break;
-                                            default:
-                                                // 其他倍数奖励飘屏
-                                                ModuleTools.writeFile("抽奖_其他倍数奖励_飘屏记录.txt", parseResult.getCharSequence());
-                                                Log.e("BluedHook", "抽奖_其他倍数奖励_飘屏记录：" + parseResult.getCharSequence());
-                                                break;
-                                        }
-                                    }
-                                }
-                                if (parseResult.getMessageType() == LiveMessageParser.MessageType.CHAMELEON_LIFE) {
-                                    // 处理百变人生飘屏
-                                    ModuleTools.writeFile("百变人生_208_飘屏记录.txt", parseResult.getCharSequence());
-                                    Log.e("BluedHook", "百变人生_208_飘屏记录：" + parseResult.getCharSequence());
-                                }
-                                if (parseResult.getMessageType() == LiveMessageParser.MessageType.A_DESERT_DREAM) {
-                                    // 处理一梦敦煌飘屏
-                                    ModuleTools.writeFile("一梦敦煌_168_飘屏记录.txt", parseResult.getCharSequence());
-                                    Log.e("BluedHook", "一梦敦煌_168_飘屏记录：" + parseResult.getCharSequence());
-                                }
-                                if (parseResult.getMessageType() == LiveMessageParser.MessageType.HOLY_SWORDSMAN) {
-                                    // 处理神圣剑士飘屏
-                                    ModuleTools.writeFile("神圣剑士_58_飘屏记录.txt", parseResult.getCharSequence());
-                                    Log.e("BluedHook", "神圣剑士_58_飘屏记录：" + parseResult.getCharSequence());
-                                }
-                                if (parseResult.getMessageType() == LiveMessageParser.MessageType.PRIMARY_TREASURE) {
-                                    // 处理初级宝藏飘屏
-                                    ModuleTools.writeFile("初级宝藏_10_飘屏记录.txt", parseResult.getCharSequence());
-                                    Log.e("BluedHook", "初级宝藏_10_飘屏记录：" + parseResult.getCharSequence());
-                                }
-                                if (parseResult.getMessageType() == LiveMessageParser.MessageType.ADVANCED_TREASURE) {
-                                    // 处理高级宝藏飘屏
-                                    ModuleTools.writeFile("高级宝藏_200_飘屏记录.txt", parseResult.getCharSequence());
-                                    Log.e("BluedHook", "高级宝藏_200_飘屏记录：" + parseResult.getCharSequence());
-                                }
-                                if (parseResult.getMessageType() == LiveMessageParser.MessageType.GLOWING_TREASURE) {
-                                    // 处理璀璨宝藏飘屏
-                                    ModuleTools.writeFile("璀璨宝藏_500_飘屏记录.txt", parseResult.getCharSequence());
-                                    Log.e("BluedHook", "璀璨宝藏_500_飘屏记录：" + parseResult.getCharSequence());
-                                }
+//                                LiveMessageParser liveMessageParser = new LiveMessageParser();
+//                                LiveMessageParser.ParseResult parseResult = liveMessageParser.parse(contents);
+//                                Log.i("BluedHook", "飘屏类型 -> " + parseResult.getMessageType() + "|" + parseResult.getCharSequence() + "|" + parseResult.getKeywords().toString());
+//                                if (parseResult.getMessageType() == LiveMessageParser.MessageType.MULTIPLIER_REWARD) {
+//                                    // 只有关键字是3个的时候，才是倍数奖励飘屏
+//                                    if (parseResult.getKeywords().size() == 3) {
+//                                        // 处理倍数奖励飘屏
+//                                        String rewardMultiplier = parseResult.getKeywords().get(1);
+//                                        String rewardBean = parseResult.getKeywords().get(2);
+//                                        //计算幸运礼物本身的价值
+//                                        int LuckyGiftsBean = Integer.parseInt(rewardBean) / Integer.parseInt(rewardMultiplier);
+//                                        switch (LuckyGiftsBean) {
+//                                            case 4:
+//                                                //幸运手镯
+//                                                ModuleTools.writeFile("抽奖_幸运手镯_飘屏记录.txt", parseResult.getCharSequence());
+//                                                Log.e("BluedHook", "抽奖_幸运手镯_飘屏记录：" + parseResult.getCharSequence());
+//                                                break;
+//                                            case 12:
+//                                                //幸运魔法棒
+//                                                ModuleTools.writeFile("抽奖_幸运魔法棒_飘屏记录.txt", parseResult.getCharSequence());
+//                                                Log.e("BluedHook", "抽奖_幸运魔法棒_飘屏记录：" + parseResult.getCharSequence());
+//                                                break;
+//                                            case 36:
+//                                                //幸运魔镜
+//                                                ModuleTools.writeFile("抽奖_幸运魔镜_飘屏记录.txt", parseResult.getCharSequence());
+//                                                Log.e("BluedHook", "抽奖_幸运魔镜_飘屏记录：" + parseResult.getCharSequence());
+//                                                break;
+//                                            default:
+//                                                // 其他倍数奖励飘屏
+//                                                ModuleTools.writeFile("抽奖_其他倍数奖励_飘屏记录.txt", parseResult.getCharSequence());
+//                                                Log.e("BluedHook", "抽奖_其他倍数奖励_飘屏记录：" + parseResult.getCharSequence());
+//                                                break;
+//                                        }
+//                                    }
+//                                }
+//                                if (parseResult.getMessageType() == LiveMessageParser.MessageType.CHAMELEON_LIFE) {
+//                                    // 处理百变人生飘屏
+//                                    ModuleTools.writeFile("百变人生_208_飘屏记录.txt", parseResult.getCharSequence());
+//                                    Log.e("BluedHook", "百变人生_208_飘屏记录：" + parseResult.getCharSequence());
+//                                }
+//                                if (parseResult.getMessageType() == LiveMessageParser.MessageType.A_DESERT_DREAM) {
+//                                    // 处理一梦敦煌飘屏
+//                                    ModuleTools.writeFile("一梦敦煌_168_飘屏记录.txt", parseResult.getCharSequence());
+//                                    Log.e("BluedHook", "一梦敦煌_168_飘屏记录：" + parseResult.getCharSequence());
+//                                }
+//                                if (parseResult.getMessageType() == LiveMessageParser.MessageType.HOLY_SWORDSMAN) {
+//                                    // 处理神圣剑士飘屏
+//                                    ModuleTools.writeFile("神圣剑士_58_飘屏记录.txt", parseResult.getCharSequence());
+//                                    Log.e("BluedHook", "神圣剑士_58_飘屏记录：" + parseResult.getCharSequence());
+//                                }
+//                                if (parseResult.getMessageType() == LiveMessageParser.MessageType.PRIMARY_TREASURE) {
+//                                    // 处理初级宝藏飘屏
+//                                    ModuleTools.writeFile("初级宝藏_10_飘屏记录.txt", parseResult.getCharSequence());
+//                                    Log.e("BluedHook", "初级宝藏_10_飘屏记录：" + parseResult.getCharSequence());
+//                                }
+//                                if (parseResult.getMessageType() == LiveMessageParser.MessageType.ADVANCED_TREASURE) {
+//                                    // 处理高级宝藏飘屏
+//                                    ModuleTools.writeFile("高级宝藏_200_飘屏记录.txt", parseResult.getCharSequence());
+//                                    Log.e("BluedHook", "高级宝藏_200_飘屏记录：" + parseResult.getCharSequence());
+//                                }
+//                                if (parseResult.getMessageType() == LiveMessageParser.MessageType.GLOWING_TREASURE) {
+//                                    // 处理璀璨宝藏飘屏
+//                                    ModuleTools.writeFile("璀璨宝藏_500_飘屏记录.txt", parseResult.getCharSequence());
+//                                    Log.e("BluedHook", "璀璨宝藏_500_飘屏记录：" + parseResult.getCharSequence());
+//                                }
                             }
                         }
                         if (msgExtra != null) {
