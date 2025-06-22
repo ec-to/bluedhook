@@ -98,9 +98,10 @@ public class DataAnalyzerView extends FrameLayout {
         put("圣剑降临", 5088);
     }};
     private static final Map<String, Integer> LUCKY_GIFT_TYPE = new HashMap<>() {{
-        put("幸运手镯", 4);
-        put("幸运魔法棒", 12);
-        put("幸运魔镜", 36);
+        put("幸运围棋", 4);
+        put("幸运卡牌", 12);
+        put("幸运发财", 36);
+        put("幸运面具", 100);
     }};
 
     public DataAnalyzerView(@NonNull Context context) {
