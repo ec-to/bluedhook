@@ -2,6 +2,7 @@ package com.zjfgh.bluedhook.simple;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Handler;
@@ -21,6 +22,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -128,11 +130,15 @@ public class DataAnalyzerView extends FrameLayout {
         Button analyzeCheckbox = view.findViewById(R.id.analyze_checkbox);
         analyzeCheckbox.setBackground(AppContainer.getInstance().getModuleRes().getDrawable(R.drawable.button_state, null));
         analyzeCheckbox.setOnClickListener(v -> analyzeData());
+        Button btFilterCopy = view.findViewById(R.id.filter_copy);
+        btFilterCopy.setBackground(AppContainer.getInstance().getModuleRes().getDrawable(R.drawable.button_state, null));
+        btFilterCopy.setOnClickListener(v -> copyFilteredResultsToClipboard());
         GradientDrawable analyzeCheckboxDrawable = new GradientDrawable();
         analyzeCheckboxDrawable.setCornerRadius(25f);
         dateSpinner = view.findViewById(R.id.date_spinner);
         fileTypeSpinner = view.findViewById(R.id.file_type_spinner);
         filterEditText = view.findViewById(R.id.filter_edit_text);
+        restoreFilterCondition();
         summaryTextView = view.findViewById(R.id.summary_text_view);
         summaryTextView.setBackground(AppContainer.getInstance().getModuleRes().getDrawable(R.drawable.bg_tech_tag, null));
         ViewGroup llRecyclerView = view.findViewById(R.id.ll_recycler_view);
@@ -154,7 +160,21 @@ public class DataAnalyzerView extends FrameLayout {
         this.recordsData = recordsData;
         processRecordsData();
     }
-
+    private void saveFilterCondition(String filterText) {
+        Log.d("BluedHook","saveFilterCondition");
+        SharedPreferences prefs = getContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString("last_filter_condition", filterText);
+        editor.apply(); // 异步保存
+    }
+    private void restoreFilterCondition() {
+        Log.d("BluedHook","restoreFilterCondition");
+        SharedPreferences prefs = getContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE);
+        String lastFilter = prefs.getString("last_filter_condition", "");
+        if (!lastFilter.isEmpty()) {
+            filterEditText.setText(lastFilter);
+        }
+    }
     private void setupListeners() {
         // 自动分析复选框
         autoAnalyzeCheckbox.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -204,8 +224,9 @@ public class DataAnalyzerView extends FrameLayout {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 filterRecords(s.toString());
+                String query = s.toString().trim();
+                saveFilterCondition(query); // 保存当前过滤条件
             }
-
             @Override
             public void afterTextChanged(Editable s) {
             }
@@ -482,6 +503,7 @@ public class DataAnalyzerView extends FrameLayout {
     }
 
     private void filterRecords(String filterText) {
+        if (filteredRecords == null){return;}
         filteredRecords.clear();
 
         if (filterText.isEmpty()) {
@@ -556,7 +578,26 @@ public class DataAnalyzerView extends FrameLayout {
             summaryTextView.setText("没有可用的统计信息");
         }
     }
+    private void copyFilteredResultsToClipboard() {
+        if (filteredRecords.isEmpty()) {
+            ModuleTools.showToast("无筛选结果可复制", Toast.LENGTH_SHORT);
+            return;
+        }
 
+        // 1. 构建结果字符串
+        StringBuilder sb = new StringBuilder();
+        for (RecordItem item : filteredRecords) {
+            String[] dateTime = item.time.split(" ");
+            String s = dateTime[1] + " "
+                    + item.user + " "
+                    + item.gift + " ("
+                    + item.beans + ")"
+                    + item.count + "倍 "
+                    + item.total + " 豆";
+            sb.append(s).append("\n");
+        }
+        ModuleTools.copyToClipboard(getContext(),"筛选结果",sb.toString());
+    }
     public void onDestroy() {
         // 清理资源
         mainHandler.removeCallbacks(refreshRunnable);
