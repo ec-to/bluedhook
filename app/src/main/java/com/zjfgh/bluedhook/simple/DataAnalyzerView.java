@@ -588,12 +588,8 @@ public class DataAnalyzerView extends FrameLayout {
         StringBuilder sb = new StringBuilder();
         for (RecordItem item : filteredRecords) {
             String[] dateTime = item.time.split(" ");
-            String s = dateTime[1] + " "
-                    + item.user + " "
-                    + item.gift + " ("
-                    + item.beans + ")"
-                    + item.count + "倍 "
-                    + item.total + " 豆";
+            String s = String.format("%s  %s %s %s %s豆",
+                    dateTime[1], item.user, item.gift, item.count, item.total);
             sb.append(s).append("\n");
         }
         ModuleTools.copyToClipboard(getContext(),"筛选结果",sb.toString());

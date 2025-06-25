@@ -54,6 +54,46 @@ public class BluedHook implements IXposedHookLoadPackage, IXposedHookInitPackage
                         Log.e("BluedHook", "语音合成模块异常：\n" +
                                 e);
                     }
+                    // Hook ZegoAvConfig 构造函数（修改分辨率等级）
+                    XposedHelpers.findAndHookConstructor(
+                            "com.zego.zegoliveroom.constants.ZegoAvConfig",
+                            bluedContext.getClassLoader(),
+                            int.class, new XC_MethodHook() {
+                            @Override
+                            protected void beforeHookedMethod(MethodHookParam param){
+                                param.args[0] = 4; // 720P
+                                Log.d("BluedHook","设置Zego分辨率");
+                            }
+                    });
+                    // Hook setVideoFPS（修改帧率）
+                    XposedHelpers.findAndHookMethod(
+                            "com.zego.zegoliveroom.constants.ZegoAvConfig",
+                            bluedContext.getClassLoader(),
+                            "setVideoFPS",
+                            int.class,
+                            new XC_MethodHook() {
+                                @Override
+                                protected void beforeHookedMethod(MethodHookParam param) {
+                                    param.args[0] = 60; // 60fps
+                                    Log.d("BluedHook","设置Zego帧率");
+                                }
+                            }
+                    );
+
+                    // Hook setVideoBitrate（修改码率）
+                    XposedHelpers.findAndHookMethod(
+                            "com.zego.zegoliveroom.constants.ZegoAvConfig",
+                            bluedContext.getClassLoader(),
+                            "setVideoBitrate",
+                            int.class,
+                            new XC_MethodHook() {
+                                @Override
+                                protected void beforeHookedMethod(MethodHookParam param) {
+                                    param.args[0] = 100000; // 8000kbps
+                                    Log.d("BluedHook","设置Zego比特率");
+                                }
+                            }
+                    );
                     NetworkManager.getInstance();
                     UserInfoFragmentNewHook.getInstance(bluedContext, AppContainer.getInstance().getModuleRes());
                     LiveHook.getInstance(bluedContext);
