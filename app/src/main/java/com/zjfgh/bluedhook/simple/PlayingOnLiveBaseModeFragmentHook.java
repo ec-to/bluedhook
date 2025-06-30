@@ -152,6 +152,7 @@ public class PlayingOnLiveBaseModeFragmentHook {
                             textView2Ref = null;
                             liveAutoSendMsgStop();
                             Log.i("BluedHook", "重新进入直播间");
+                            LiveMultiPKItemViewHook.getInstance(appContextRef.get(), modRes).cleanUser();
                         }
                         View view = (View) param.getResult();
                         @SuppressLint("DiscouragedApi") int id = appContextRef.get().getResources().getIdentifier("onlive_current_beans", "id",
@@ -667,6 +668,7 @@ public class PlayingOnLiveBaseModeFragmentHook {
                 isWatchingLive = false;
                 sendLikeStop();
                 liveAutoSendMsgStop();
+                LiveMultiPKItemViewHook.getInstance(appContextRef.get(), modRes).cleanUser();
                 Thread thread = new Thread(() -> {
                     // 重新连接直播间
                     reConnectLive();
