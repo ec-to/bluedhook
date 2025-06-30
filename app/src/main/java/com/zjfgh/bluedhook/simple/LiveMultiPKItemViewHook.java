@@ -7,17 +7,13 @@ import android.content.res.XmlResourceParser;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.xmlpull.v1.XmlPullParser;
-
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.function.BiConsumer;
+import java.util.Map;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
@@ -28,7 +24,7 @@ public class LiveMultiPKItemViewHook {
     private final WeakReference<Context> contextRef;
     private final XModuleResources modRes;
     private final HashMap<String, MsgSenderAnchor> hmSendMsgAnchor;
-
+    public boolean isMultiPkStart = false;
 
     private LiveMultiPKItemViewHook(Context context, XModuleResources modRes) {
         this.contextRef = new WeakReference<>(context);
@@ -58,6 +54,8 @@ public class LiveMultiPKItemViewHook {
                     protected void beforeHookedMethod(XC_MethodHook.MethodHookParam param) throws Throwable {
                         super.beforeHookedMethod(param);
                         Object liveInviteUserModel = param.args[0];
+                        isMultiPkStart = true;
+                        ModuleTools.showBluedToast("多人PK弹幕同步功能开启");
                         String name = (String) XposedHelpers.getObjectField(liveInviteUserModel, "name");
                         String uid = (String) XposedHelpers.getObjectField(liveInviteUserModel, "uid");
                         String lid = (String) XposedHelpers.getObjectField(liveInviteUserModel, "lid");
@@ -78,27 +76,38 @@ public class LiveMultiPKItemViewHook {
                         msgSenderAnchor.avatar = avatar;
                         msgSenderAnchor.tvSyncTitle = tvSyncTitle;
                         msgSenderAnchor.flBackRound = flBackRound;
+                        if (lid.equals(String.valueOf(LiveMsgSendManagerHook.mainLid))) {
+                            //当前lid和主lid相同即表示,列表要重新刷新了
+                            cleanUser();
+                            Log.i("BluedHook", "刷新pk列表222222222222");
+                            // 获取当前的LayoutParams
+                            LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) flBackRound.getLayoutParams();
+                            // 设置外边距（left, top, right, bottom，单位是px）
+                            params.setMargins(ModuleTools.dpToPx(2), ModuleTools.dpToPx(100), ModuleTools.dpToPx(8), ModuleTools.dpToPx(2));
+                            // 重新应用LayoutParams
+                            flBackRound.setLayoutParams(params);
+                        }
                         flBackRound.setTag(msgSenderAnchor);
                         flBackRound.setOnClickListener(v -> {
-                            MsgSenderAnchor msgSenderAnchor1 = (MsgSenderAnchor) v.getTag();
-                            if (!msgSenderAnchor1.isChecked) {
-                                msgSenderAnchor1.isChecked = true;
+                            MsgSenderAnchor tempSenderAnchor = (MsgSenderAnchor) v.getTag();
+                            if (!tempSenderAnchor.isChecked) {
+                                tempSenderAnchor.isChecked = true;
                                 flBackRound.setBackground(modRes.getDrawable(R.drawable.tech_bg_selected, null));
-                                hmSendMsgAnchor.put(lid, msgSenderAnchor1);
+                                hmSendMsgAnchor.put(tempSenderAnchor.lid, tempSenderAnchor);
+                                Log.i("BluedHook", "添加用户:" + tempSenderAnchor.name + "-LID:" + tempSenderAnchor.lid);
                             } else {
-                                msgSenderAnchor1.isChecked = false;
-                                removeUser(uid);
+                                tempSenderAnchor.isChecked = false;
+                                removeUser(tempSenderAnchor.lid);
                                 flBackRound.setBackground(modRes.getDrawable(R.drawable.tech_bg_default, null));
-                                hmSendMsgAnchor.remove(uid);
                             }
                         });
                     }
                 });
     }
 
-    public void removeUser(String uid) {
-        hmSendMsgAnchor.remove(uid);
-        Log.d("BluedHook", "移除用户UID：" + hmSendMsgAnchor.size());
+    public void removeUser(String lid) {
+        hmSendMsgAnchor.remove(lid);
+        Log.d("BluedHook", "移除用户LID：" + lid + "-列表数量:" + hmSendMsgAnchor.size());
     }
 
     public void cleanUser() {
@@ -114,27 +123,54 @@ public class LiveMultiPKItemViewHook {
                 "com.blued.android.module.live_china.model.LiveZanExtraModel$EmojiModel",
                 "com.blued.android.module.live_china.msg.SendMsgListener", new XC_MethodHook() {
                     @Override
-                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
-                        super.afterHookedMethod(param);
+                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                        super.beforeHookedMethod(param);
                         String msg = (String) param.args[0];
-                        Object liveRoomData = LiveMsgSendManagerHook.liveRoomData;
-                        Object liveRoomManager = LiveMsgSendManagerHook.getLiveRoomManager();
-                        long lid = XposedHelpers.getLongField(liveRoomData, "lid");
-                        hmSendMsgAnchor.forEach((key, value) -> {
-                            // 使用 key 和 value 进行操作
-                            if (key.equals(String.valueOf(lid))) {
-                                Log.i("BluedHook", "跳过主直播间发言");
-                                return;
+                        // 判断是否正在发送消息，避免无限循环
+                        if (!isSenderLiveMsg) {
+                            handleMultiRoomMessage(msg);
+                            if (hmSendMsgAnchor.get(String.valueOf(LiveMsgSendManagerHook.mainLid)) == null && isMultiPkStart) {
+                                param.setResult(null);
                             }
-                            XposedHelpers.setLongField(liveRoomData, "lid", Long.parseLong(value.lid));
-                            XposedHelpers.callMethod(liveRoomManager, "a", liveRoomData);
-                            Log.e("BluedHook", "Key: " + key + ", Value: " + value.name);
-                            LiveMsgSendManagerHook.startSendMsg(msg);
-                        });
-                        XposedHelpers.setLongField(liveRoomData, "lid", LiveMsgSendManagerHook.mainLid);
-                        XposedHelpers.callMethod(liveRoomManager, "a", liveRoomData);
+                        }
                     }
                 });
+    }
+
+    private boolean isSenderLiveMsg = false;
+
+    // 独立出来的消息处理方法
+    private void handleMultiRoomMessage(String msg) {
+        new Thread(() -> {  // 在新线程中处理避免阻塞主线程
+            try {
+                isSenderLiveMsg = true;
+                Log.e("BluedHook", "size:" + hmSendMsgAnchor.size());
+                Object liveRoomData = LiveMsgSendManagerHook.liveRoomData;
+                Object liveRoomManager = LiveMsgSendManagerHook.getLiveRoomManager();
+                long originalLid = XposedHelpers.getLongField(liveRoomData, "lid");
+                // 遍历所有房间发送消息
+                for (Map.Entry<String, MsgSenderAnchor> entry : hmSendMsgAnchor.entrySet()) {
+                    String key = entry.getKey();
+                    MsgSenderAnchor msgSenderAnchor = entry.getValue();
+                    if (msgSenderAnchor.lid.equals(String.valueOf(LiveMsgSendManagerHook.mainLid))) {
+                        Log.i("BluedHook", "跳过自身直播间");
+                        continue;
+                    }
+                    // 切换到目标房间
+                    XposedHelpers.setLongField(liveRoomData, "lid", Long.parseLong(msgSenderAnchor.lid));
+                    XposedHelpers.callMethod(liveRoomManager, "a", liveRoomData);
+                    Log.e("BluedHook", "发送到房间: " + key + ", 名称: " + msgSenderAnchor.name);
+                    // 发送消息
+                    LiveMsgSendManagerHook.startSendMsg(msg);
+                }
+                // 恢复原始房间
+                XposedHelpers.setLongField(liveRoomData, "lid", originalLid);
+                XposedHelpers.callMethod(liveRoomManager, "a", liveRoomData);
+                isSenderLiveMsg = false;
+            } catch (Exception e) {
+                Log.e("BluedHook", "处理多房间消息出错", e);
+            }
+        }).start();
     }
 
     public static class MsgSenderAnchor {

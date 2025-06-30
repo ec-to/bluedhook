@@ -153,6 +153,7 @@ public class PlayingOnLiveBaseModeFragmentHook {
                             liveAutoSendMsgStop();
                             Log.i("BluedHook", "重新进入直播间");
                             LiveMultiPKItemViewHook.getInstance(appContextRef.get(), modRes).cleanUser();
+                            LiveMultiPKItemViewHook.getInstance(appContextRef.get(), modRes).isMultiPkStart = false;
                         }
                         View view = (View) param.getResult();
                         @SuppressLint("DiscouragedApi") int id = appContextRef.get().getResources().getIdentifier("onlive_current_beans", "id",
@@ -571,6 +572,16 @@ public class PlayingOnLiveBaseModeFragmentHook {
 //                                    ModuleTools.writeFile("璀璨宝藏_500_飘屏记录.txt", parseResult.getCharSequence());
 //                                    Log.e("BluedHook", "璀璨宝藏_500_飘屏记录：" + parseResult.getCharSequence());
 //                                }
+                            }
+                        }
+                        if (typeValue == 262) {
+                            Class<?> MultiPkExit = XposedHelpers.findClass("cn.irisgw.live.MultiPkExit", classLoader);
+                            boolean isMultiPkExit = (boolean) XposedHelpers.callMethod(msgExtra, "is", MultiPkExit);
+                            if (isMultiPkExit) {
+                                Object multiPkExit = XposedHelpers.callMethod(msgExtra, "unpack", MultiPkExit);
+                                Object getActionUsers = XposedHelpers.callMethod(multiPkExit, "getActionUsers");
+                                int isMultiPkEnd = (int) XposedHelpers.callMethod(getActionUsers, "getIsMultiPkEnd");
+                                Log.e("BluedHook", "typeValue == 262->isMultiPkEnd->" + isMultiPkEnd);
                             }
                         }
                         if (msgExtra != null) {
