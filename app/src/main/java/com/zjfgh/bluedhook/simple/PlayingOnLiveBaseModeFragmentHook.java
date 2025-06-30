@@ -70,6 +70,7 @@ public class PlayingOnLiveBaseModeFragmentHook {
         grpcMsgSenderHook();
         SendLikeSafeIntervalExecutor();
         startTimer();
+        LiveSendMsgSafeIntervalExecutor();
     }
 
     // 获取单例实例
@@ -149,7 +150,9 @@ public class PlayingOnLiveBaseModeFragmentHook {
                         if (textView1Ref != null && textView2Ref != null) {
                             textView1Ref = null;
                             textView2Ref = null;
+                            liveAutoSendMsgStop();
                             Log.i("BluedHook", "重新进入直播间");
+                            LiveMultiPKItemViewHook.getInstance(appContextRef.get(), modRes).cleanUser();
                         }
                         View view = (View) param.getResult();
                         @SuppressLint("DiscouragedApi") int id = appContextRef.get().getResources().getIdentifier("onlive_current_beans", "id",
@@ -264,6 +267,24 @@ public class PlayingOnLiveBaseModeFragmentHook {
                                 }
                             });
                             rl_top_info_root.addView(secondTg);
+                            SettingItem liveAutoSendMsgSetting = SQLiteManagement.getInstance().getSettingByFunctionId(SettingsViewCreator.LIVE_AUTO_SEND_MSG);
+                            TextView liveAutoSendMsg = secondTg.addTextView("定时发送消息", 10, modRes.getDrawable(R.drawable.bg_zise_tag, null));
+                            liveAutoSendMsg.setTag(liveAutoSendMsgSetting.isSwitchOn());
+                            if (!liveAutoSendMsgSetting.isSwitchOn()) {
+                                liveAutoSendMsg.setBackground(modRes.getDrawable(R.drawable.bg_gray_round_5_dp, null));
+                            }
+                            liveAutoSendMsg.setOnClickListener(v -> {
+                                boolean isAutoSendMsg = (boolean) v.getTag();
+                                if (isAutoSendMsg) {
+                                    v.setTag(false);
+                                    v.setBackground(modRes.getDrawable(R.drawable.bg_gray_round_5_dp, null));
+                                    liveAutoSendMsgStop();
+                                } else {
+                                    v.setTag(true);
+                                    v.setBackground(modRes.getDrawable(R.drawable.bg_zise_tag, null));
+                                    liveAutoSendMsgStart();
+                                }
+                            });
                         } else {
                             textView2Ref = new WeakReference<>(textView);
                         }
@@ -646,6 +667,8 @@ public class PlayingOnLiveBaseModeFragmentHook {
                 Log.i("BluedHook", "收到消息->直播间消息，类型：手动退出直播间");
                 isWatchingLive = false;
                 sendLikeStop();
+                liveAutoSendMsgStop();
+                LiveMultiPKItemViewHook.getInstance(appContextRef.get(), modRes).cleanUser();
                 Thread thread = new Thread(() -> {
                     // 重新连接直播间
                     reConnectLive();
@@ -777,6 +800,62 @@ public class PlayingOnLiveBaseModeFragmentHook {
 
     private void sendLikeDoIntervalTask() {
         XposedHelpers.callMethod(grpcMsgSender, "a", false);
+    }
+
+    private Handler liveAutoSendMsgHandler;
+    private Runnable liveAutoSendMsgIntervalRunnable;
+    private boolean liveAutoSendMsgIsRunning;
+    private static final long LIVE_AUTO_SEND_MSG_INTERVAL = 10 * 60 * 1000;
+
+    public void LiveSendMsgSafeIntervalExecutor() {
+        liveAutoSendMsgHandler = new Handler(Looper.getMainLooper());
+        liveAutoSendMsgIntervalRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (!liveAutoSendMsgIsRunning) return;
+                // 执行你的任务
+                liveSendMsgDoIntervalTask();
+                // 安排下一次执行
+                liveAutoSendMsgHandler.postDelayed(this, LIVE_AUTO_SEND_MSG_INTERVAL);
+            }
+        };
+    }
+
+    public void liveAutoSendMsgStart() {
+        if (liveAutoSendMsgIsRunning) return;
+        liveAutoSendMsgIsRunning = true;
+        liveAutoSendMsgHandler.postDelayed(liveAutoSendMsgIntervalRunnable, 0);
+        SQLiteManagement.getInstance().updateSettingSwitchState(SettingsViewCreator.LIVE_AUTO_SEND_MSG, true);
+        ModuleTools.showBluedToast("定时发送消息开始");
+    }
+
+    public void liveAutoSendMsgStop() {
+        if (liveAutoSendMsgIsRunning) {
+            liveAutoSendMsgIsRunning = false;
+            liveAutoSendMsgHandler.removeCallbacks(liveAutoSendMsgIntervalRunnable);
+            SQLiteManagement.getInstance().updateSettingSwitchState(SettingsViewCreator.LIVE_AUTO_SEND_MSG, false);
+            ModuleTools.showBluedToast("停止发送定时消息");
+        }
+    }
+
+    private void liveSendMsgDoIntervalTask() {
+        SettingItem liveSendMsg = SQLiteManagement.getInstance().getSettingByFunctionId(SettingsViewCreator.LIVE_AUTO_SEND_MSG);
+        if (liveSendMsg.isSwitchOn()) {
+            Log.d("BluedHook", "发送消息：\n"
+                    + "内容：" + liveSendMsg.getExtraData());
+            Object liveMsgSendManager = LiveMsgSendManagerHook.getLiveMsgSendManager();
+            Object liveRoomData = LiveMsgSendManagerHook.liveRoomData;
+            Object liveRoomManager = LiveMsgSendManagerHook.getLiveRoomManager();
+            Log.d("BluedHook", "liveMsgSendManager：" + liveMsgSendManager);
+            Log.d("BluedHook", "liveRoomManager：" + liveRoomManager);
+            Log.d("BluedHook", "liveRoomData：" + liveRoomData);
+            Log.d("BluedHook", "mainLid：" + LiveMsgSendManagerHook.mainLid);
+            LiveMsgSendManagerHook.startSendMsg(liveSendMsg.getExtraData());
+//            XposedHelpers.setLongField(liveRoomData, "lid", 39066492);
+//            XposedHelpers.callMethod(liveRoomManager, "a", liveRoomData);
+//            long senderLid = XposedHelpers.getLongField(liveRoomData, "lid");
+//            Log.d("BluedHook", "senderLid：" + senderLid);
+        }
     }
 
     private void reConnectLive() {

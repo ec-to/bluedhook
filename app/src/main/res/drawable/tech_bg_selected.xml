@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <!-- 半透明科技紫 + 动态渐变 -->
+    <gradient
+        android:angle="270"
+        android:startColor="#4000FFA3"
+        android:endColor="#4003FDA1" />
+    <!-- 圆角（与未选择状态保持一致） -->
+    <corners android:radius="8dp" />
+    <!-- 发光边框（增强选中效果） -->
+    <stroke
+        android:width="1dp"
+        android:color="#00FFA4" />
+</shape>
