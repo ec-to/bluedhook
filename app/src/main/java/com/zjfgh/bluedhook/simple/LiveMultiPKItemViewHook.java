@@ -36,6 +36,7 @@ public class LiveMultiPKItemViewHook {
         this.modRes = modRes;
         hmSendMsgAnchor = new HashMap<>();
         setDataHook();
+        viewHook();
     }
 
     // 获取单例实例
@@ -83,8 +84,7 @@ public class LiveMultiPKItemViewHook {
                             if (!msgSenderAnchor1.isChecked) {
                                 msgSenderAnchor1.isChecked = true;
                                 flBackRound.setBackground(modRes.getDrawable(R.drawable.tech_bg_selected, null));
-                                hmSendMsgAnchor.put(uid, msgSenderAnchor1);
-
+                                hmSendMsgAnchor.put(lid, msgSenderAnchor1);
                             } else {
                                 msgSenderAnchor1.isChecked = false;
                                 removeUser(uid);
@@ -104,6 +104,37 @@ public class LiveMultiPKItemViewHook {
     public void cleanUser() {
         hmSendMsgAnchor.clear();
         Log.d("BluedHook", "清空用户：" + hmSendMsgAnchor.size());
+    }
+
+    public void viewHook() {
+        XposedHelpers.findAndHookMethod("com.blued.android.module.live_china.msg.GrpcMsgSender",
+                classLoader, "a",
+                "java.lang.String",
+                boolean.class,
+                "com.blued.android.module.live_china.model.LiveZanExtraModel$EmojiModel",
+                "com.blued.android.module.live_china.msg.SendMsgListener", new XC_MethodHook() {
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                        super.afterHookedMethod(param);
+                        String msg = (String) param.args[0];
+                        Object liveRoomData = LiveMsgSendManagerHook.liveRoomData;
+                        Object liveRoomManager = LiveMsgSendManagerHook.getLiveRoomManager();
+                        long lid = XposedHelpers.getLongField(liveRoomData, "lid");
+                        hmSendMsgAnchor.forEach((key, value) -> {
+                            // 使用 key 和 value 进行操作
+                            if (key.equals(String.valueOf(lid))) {
+                                Log.i("BluedHook", "跳过主直播间发言");
+                                return;
+                            }
+                            XposedHelpers.setLongField(liveRoomData, "lid", Long.parseLong(value.lid));
+                            XposedHelpers.callMethod(liveRoomManager, "a", liveRoomData);
+                            Log.e("BluedHook", "Key: " + key + ", Value: " + value.name);
+                            LiveMsgSendManagerHook.startSendMsg(msg);
+                        });
+                        XposedHelpers.setLongField(liveRoomData, "lid", LiveMsgSendManagerHook.mainLid);
+                        XposedHelpers.callMethod(liveRoomManager, "a", liveRoomData);
+                    }
+                });
     }
 
     public static class MsgSenderAnchor {
