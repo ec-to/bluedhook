@@ -26,6 +26,7 @@ public class SettingsViewCreator {
     public static final int REC_HEW_HORN = 5;
     public static final int SHIELD_LIKE = 6;
     public static final int AUTO_LIKE = 7;
+    public static final int LIVE_AUTO_SEND_MSG = 8;
 
     public SettingsViewCreator(Context context) {
         this.context = context;
@@ -190,6 +191,13 @@ public class SettingsViewCreator {
                         "注：使用此功能需先关闭屏蔽点赞开关，如需停止自动点赞，请退出直播间或关闭小窗。",
                 "",
                 ""
+        ));
+        dbManager.addOrUpdateSetting(new SettingItem(LIVE_AUTO_SEND_MSG,
+                "直播间定时发送消息",
+                false,
+                "在直播间自动发送消息",
+                "欢迎各位进入直播间",
+                "请输入需要发送的消息内容。"
         ));
     }
 
