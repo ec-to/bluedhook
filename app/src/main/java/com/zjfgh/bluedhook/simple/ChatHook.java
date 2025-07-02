@@ -29,11 +29,11 @@ public class ChatHook {
         this.classLoader = context.getClassLoader();
         this.modRes = modRes;
         messageRecallHook();
+        hookMsgChattingTitle();
         snapChatHook();
         chatHelperV4MdHook();
         chatReadedHook();
         chatProtectScreenshotHook();
-        hookMsgChattingTitle();
     }
 
     // 获取单例实例
@@ -194,8 +194,8 @@ public class ChatHook {
                     new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) {
-                            getTvRecallMsg().setVisibility(View.VISIBLE);
                             handleFlashMessages(param);
+                            getTvRecallMsg().setVisibility(View.VISIBLE);
                         }
                     });
         } catch (Throwable e) {
@@ -209,9 +209,9 @@ public class ChatHook {
     private void handleFlashMessages(XC_MethodHook.MethodHookParam param) {
         try {
             Object thisObject = param.thisObject;
-            Object t = XposedHelpers.getObjectField(thisObject, "t");
-            Object E = XposedHelpers.callMethod(t, "E");
-            Object a = XposedHelpers.callMethod(E, "a");
+            Object iMsgChattingView = XposedHelpers.getObjectField(thisObject, "u");
+            Object msgChattingAdapter = XposedHelpers.callMethod(iMsgChattingView, "E");
+            Object a = XposedHelpers.callMethod(msgChattingAdapter, "a");
             if (!(a instanceof List)) {
                 return;
             }
@@ -436,7 +436,7 @@ public class ChatHook {
     }
 
     private void hookMsgChattingTitle() {
-        XposedHelpers.findAndHookMethod("com.soft.blued.ui.msg.MsgChattingFragment", classLoader, "af", new XC_MethodHook() {
+        XposedHelpers.findAndHookMethod("com.soft.blued.ui.msg.MsgChattingFragment", classLoader, "ag", new XC_MethodHook() {
             @SuppressLint("UseCompatLoadingForDrawables")
             @Override
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
