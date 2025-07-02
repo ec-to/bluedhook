@@ -315,21 +315,15 @@ public class ChatHook {
             chatContent.msgContent = (String) XposedHelpers.getObjectField(chattingModel, "msgContent");
             chatContent.sessionId = XposedHelpers.getLongField(chattingModel, "sessionId");
             chatContent.fromId = XposedHelpers.getLongField(chattingModel, "fromId");
-            if (chatContent.extraMsg.isEmpty()) {
+            if (!chatContent.extraMsg.isEmpty()) {
                 try {
                     JSONObject json = new JSONObject(chatContent.extraMsg);
                     // 检查字段是否存在
                     boolean hasCustomPushContent = json.has("custom_push_content");
                     boolean hasLid = json.has("lid");
-                    Log.i("BluedHook", "ChatHook\n" +
-                            "handleChatMessage\n" +
-                            "custom_push_content 存在: " + hasCustomPushContent + "\n" +
-                            "lid 存在: " + hasLid);
                     // 如果字段存在，获取值
                     if (hasCustomPushContent) {
                         String customPushContent = json.getString("custom_push_content");
-                        Log.i("BluedHook", "ChatHook\n" +
-                                "custom_push_content 值: " + customPushContent);
                         if (hasLid) {
                             int lid = json.getInt("lid");
                             if (lid > 0) {
@@ -337,8 +331,6 @@ public class ChatHook {
                             }
                         }
                     }
-
-
                 } catch (Exception e) {
                     System.err.println("JSON 解析错误: " + e.getMessage());
                 }

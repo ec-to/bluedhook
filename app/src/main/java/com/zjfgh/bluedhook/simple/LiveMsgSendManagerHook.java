@@ -7,6 +7,7 @@ import de.robv.android.xposed.XposedHelpers;
 
 public class LiveMsgSendManagerHook {
     public static long mainLid;
+    public static long mainUid;
     public static Object liveRoomData;
 
     public static void init() {
@@ -16,6 +17,8 @@ public class LiveMsgSendManagerHook {
                 super.beforeHookedMethod(param);
                 liveRoomData = param.args[0];
                 mainLid = XposedHelpers.getLongField(liveRoomData, "lid");
+                Object profile = XposedHelpers.getObjectField(liveRoomData, "profile");
+                mainUid = (long) XposedHelpers.callMethod(profile, "getUid");
             }
         });
     }

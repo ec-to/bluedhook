@@ -79,11 +79,10 @@ public class LiveMultiPKItemViewHook {
                         if (lid.equals(String.valueOf(LiveMsgSendManagerHook.mainLid))) {
                             //当前lid和主lid相同即表示,列表要重新刷新了
                             cleanUser();
-                            Log.i("BluedHook", "刷新pk列表222222222222");
                             // 获取当前的LayoutParams
                             LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) flBackRound.getLayoutParams();
                             // 设置外边距（left, top, right, bottom，单位是px）
-                            params.setMargins(ModuleTools.dpToPx(2), ModuleTools.dpToPx(100), ModuleTools.dpToPx(8), ModuleTools.dpToPx(2));
+                            params.setMargins(ModuleTools.dpToPx(2), ModuleTools.dpToPx(120), ModuleTools.dpToPx(2), ModuleTools.dpToPx(2));
                             // 重新应用LayoutParams
                             flBackRound.setLayoutParams(params);
                         }

@@ -580,8 +580,11 @@ public class PlayingOnLiveBaseModeFragmentHook {
                             if (isMultiPkExit) {
                                 Object multiPkExit = XposedHelpers.callMethod(msgExtra, "unpack", MultiPkExit);
                                 Object getActionUsers = XposedHelpers.callMethod(multiPkExit, "getActionUsers");
-                                int isMultiPkEnd = (int) XposedHelpers.callMethod(getActionUsers, "getIsMultiPkEnd");
-                                Log.e("BluedHook", "typeValue == 262->isMultiPkEnd->" + isMultiPkEnd);
+                                long uid = (long) XposedHelpers.callMethod(getActionUsers, "getUid");
+                                LiveMultiPKItemViewHook.getInstance(appContextRef.get(), modRes).isMultiPkStart = false;
+                                if (LiveMsgSendManagerHook.mainLid == uid) {
+                                    ModuleTools.showBluedToast("主播已退出4人PK");
+                                }
                             }
                         }
                         if (msgExtra != null) {
