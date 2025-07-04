@@ -163,7 +163,7 @@ public class LiveMultiPKItemViewHook {
                     }
                     // 切换到目标房间
                     XposedHelpers.setLongField(liveRoomData, "lid", Long.parseLong(msgSenderAnchor.lid));
-                    //XposedHelpers.callMethod(liveRoomManager, "a", liveRoomData);
+                    XposedHelpers.callMethod(liveRoomManager, "a", liveRoomData);
                     Log.e("BluedHook", "发送到房间: " + key + ", 名称: " + msgSenderAnchor.name);
                     // 发送消息
                     LiveMsgSendManagerHook.getInstance().startSendMsg(msg);
