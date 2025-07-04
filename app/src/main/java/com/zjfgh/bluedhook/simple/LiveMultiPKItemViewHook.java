@@ -24,7 +24,7 @@ public class LiveMultiPKItemViewHook {
     private final WeakReference<Context> contextRef;
     private final XModuleResources modRes;
     private final HashMap<String, MsgSenderAnchor> hmSendMsgAnchor;
-    public boolean isMultiPkStart = false;
+    private boolean isMultiPkStart = false;
 
     private LiveMultiPKItemViewHook(Context context, XModuleResources modRes) {
         this.contextRef = new WeakReference<>(context);
@@ -41,6 +41,10 @@ public class LiveMultiPKItemViewHook {
             instance = new LiveMultiPKItemViewHook(context, modRes);
         }
         return instance;
+    }
+
+    public void setMultiPkStart(boolean multiPkStart) {
+        isMultiPkStart = multiPkStart;
     }
 
     public void setDataHook() {
@@ -76,7 +80,7 @@ public class LiveMultiPKItemViewHook {
                         msgSenderAnchor.avatar = avatar;
                         msgSenderAnchor.tvSyncTitle = tvSyncTitle;
                         msgSenderAnchor.flBackRound = flBackRound;
-                        if (lid.equals(String.valueOf(LiveMsgSendManagerHook.mainLid))) {
+                        if (lid.equals(String.valueOf(LiveMsgSendManagerHook.getInstance().getMainLid()))) {
                             //当前lid和主lid相同即表示,列表要重新刷新了
                             cleanUser();
                             // 获取当前的LayoutParams
@@ -126,10 +130,15 @@ public class LiveMultiPKItemViewHook {
                         super.beforeHookedMethod(param);
                         String msg = (String) param.args[0];
                         // 判断是否正在发送消息，避免无限循环
+                        Log.i("BluedHook", "isSenderLiveMsg->" + isSenderLiveMsg);
                         if (!isSenderLiveMsg) {
                             handleMultiRoomMessage(msg);
-                            if (hmSendMsgAnchor.get(String.valueOf(LiveMsgSendManagerHook.mainLid)) == null && isMultiPkStart) {
-                                param.setResult(null);
+                            MsgSenderAnchor isSelf = hmSendMsgAnchor.get(String.valueOf(LiveMsgSendManagerHook.getInstance().getMainLid()));
+                            Log.i("BluedHook", "isSelf->" + isSelf + "|isMultiPkStart" + isMultiPkStart);
+                            if (isMultiPkStart) {
+                                if (isSelf == null) {
+                                    param.setResult(null);
+                                }
                             }
                         }
                     }
@@ -144,23 +153,23 @@ public class LiveMultiPKItemViewHook {
             try {
                 isSenderLiveMsg = true;
                 Log.e("BluedHook", "size:" + hmSendMsgAnchor.size());
-                Object liveRoomData = LiveMsgSendManagerHook.liveRoomData;
-                Object liveRoomManager = LiveMsgSendManagerHook.getLiveRoomManager();
+                Object liveRoomData = LiveMsgSendManagerHook.getInstance().getLiveRoomData();
+                Object liveRoomManager = LiveMsgSendManagerHook.getInstance().getLiveRoomManager();
                 long originalLid = XposedHelpers.getLongField(liveRoomData, "lid");
                 // 遍历所有房间发送消息
                 for (Map.Entry<String, MsgSenderAnchor> entry : hmSendMsgAnchor.entrySet()) {
                     String key = entry.getKey();
                     MsgSenderAnchor msgSenderAnchor = entry.getValue();
-                    if (msgSenderAnchor.lid.equals(String.valueOf(LiveMsgSendManagerHook.mainLid))) {
+                    if (msgSenderAnchor.lid.equals(String.valueOf(LiveMsgSendManagerHook.getInstance().getMainLid()))) {
                         Log.i("BluedHook", "跳过自身直播间");
                         continue;
                     }
                     // 切换到目标房间
                     XposedHelpers.setLongField(liveRoomData, "lid", Long.parseLong(msgSenderAnchor.lid));
-                    XposedHelpers.callMethod(liveRoomManager, "a", liveRoomData);
+                    //XposedHelpers.callMethod(liveRoomManager, "a", liveRoomData);
                     Log.e("BluedHook", "发送到房间: " + key + ", 名称: " + msgSenderAnchor.name);
                     // 发送消息
-                    LiveMsgSendManagerHook.startSendMsg(msg);
+                    LiveMsgSendManagerHook.getInstance().startSendMsg(msg);
                 }
                 // 恢复原始房间
                 XposedHelpers.setLongField(liveRoomData, "lid", originalLid);

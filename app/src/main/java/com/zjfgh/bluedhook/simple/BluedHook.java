@@ -59,12 +59,12 @@ public class BluedHook implements IXposedHookLoadPackage, IXposedHookInitPackage
                             "com.zego.zegoliveroom.constants.ZegoAvConfig",
                             bluedContext.getClassLoader(),
                             int.class, new XC_MethodHook() {
-                            @Override
-                            protected void beforeHookedMethod(MethodHookParam param){
-                                param.args[0] = 4; // 720P
-                                Log.d("BluedHook","设置Zego分辨率");
-                            }
-                    });
+                                @Override
+                                protected void beforeHookedMethod(MethodHookParam param) {
+                                    param.args[0] = 4; // 720P
+                                    Log.d("BluedHook", "设置Zego分辨率");
+                                }
+                            });
                     // Hook setVideoFPS（修改帧率）
                     XposedHelpers.findAndHookMethod(
                             "com.zego.zegoliveroom.constants.ZegoAvConfig",
@@ -75,7 +75,7 @@ public class BluedHook implements IXposedHookLoadPackage, IXposedHookInitPackage
                                 @Override
                                 protected void beforeHookedMethod(MethodHookParam param) {
                                     param.args[0] = 60; // 60fps
-                                    Log.d("BluedHook","设置Zego帧率");
+                                    Log.d("BluedHook", "设置Zego帧率");
                                 }
                             }
                     );
@@ -90,7 +90,7 @@ public class BluedHook implements IXposedHookLoadPackage, IXposedHookInitPackage
                                 @Override
                                 protected void beforeHookedMethod(MethodHookParam param) {
                                     param.args[0] = 100000; // 8000kbps
-                                    Log.d("BluedHook","设置Zego比特率");
+                                    Log.d("BluedHook", "设置Zego比特率");
                                 }
                             }
                     );
@@ -104,7 +104,7 @@ public class BluedHook implements IXposedHookLoadPackage, IXposedHookInitPackage
                     NearbyPeopleFragment_ViewBindingHook.getInstance(AppContainer.getInstance().getBluedContext(), AppContainer.getInstance().getClassLoader());
                     HornViewNewHook.autoHornViewNew();
                     LikeFollowModel.getInstance(bluedContext, AppContainer.getInstance().getModuleRes());
-                    LiveMsgSendManagerHook.init();
+                    LiveMsgSendManagerHook.getInstance();
                     LiveMultiPKItemViewHook.getInstance(bluedContext, AppContainer.getInstance().getModuleRes());
                     wsServerManager = new WSServerManager(new WSServerManager.WSServerListener() {
                         @Override

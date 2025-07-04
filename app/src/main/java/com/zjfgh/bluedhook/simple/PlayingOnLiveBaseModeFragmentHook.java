@@ -153,7 +153,8 @@ public class PlayingOnLiveBaseModeFragmentHook {
                             liveAutoSendMsgStop();
                             Log.i("BluedHook", "重新进入直播间");
                             LiveMultiPKItemViewHook.getInstance(appContextRef.get(), modRes).cleanUser();
-                            LiveMultiPKItemViewHook.getInstance(appContextRef.get(), modRes).isMultiPkStart = false;
+                            LiveMultiPKItemViewHook.getInstance(appContextRef.get(), modRes).setMultiPkStart(false);
+                            LiveMsgSendManagerHook.getInstance().setMainLid(0);
                         }
                         View view = (View) param.getResult();
                         @SuppressLint("DiscouragedApi") int id = appContextRef.get().getResources().getIdentifier("onlive_current_beans", "id",
@@ -481,7 +482,7 @@ public class PlayingOnLiveBaseModeFragmentHook {
                                 Log.i("BluedHook", "收到消息->直播间消息：" + name + " 退出了直播间");
                                 ModuleTools.showBluedToast(name + " 退出了直播间");
                                 if (leaveLiveMsgSend != null && (boolean) leaveLiveMsgSend.getTag() && isWatchingLive) {
-                                    LiveMsgSendManagerHook.startSendMsg(name + " 退出了直播间");
+                                    LiveMsgSendManagerHook.getInstance().startSendMsg(name + " 退出了直播间");
                                     Log.d("BluedHook", "收到消息->直播间消息：" + name + " 退出了直播间，并发送到公屏。");
                                 }
                                 if (BluedHook.wsServerManager.isServerRunning()) {
@@ -581,8 +582,8 @@ public class PlayingOnLiveBaseModeFragmentHook {
                                 Object multiPkExit = XposedHelpers.callMethod(msgExtra, "unpack", MultiPkExit);
                                 Object getActionUsers = XposedHelpers.callMethod(multiPkExit, "getActionUsers");
                                 long uid = (long) XposedHelpers.callMethod(getActionUsers, "getUid");
-                                LiveMultiPKItemViewHook.getInstance(appContextRef.get(), modRes).isMultiPkStart = false;
-                                if (LiveMsgSendManagerHook.mainLid == uid) {
+                                if (LiveMsgSendManagerHook.getInstance().getMainUid() == uid) {
+                                    LiveMultiPKItemViewHook.getInstance(appContextRef.get(), modRes).setMultiPkStart(false);
                                     ModuleTools.showBluedToast("主播已退出4人PK");
                                 }
                             }
@@ -857,14 +858,14 @@ public class PlayingOnLiveBaseModeFragmentHook {
         if (liveSendMsg.isSwitchOn()) {
             Log.d("BluedHook", "发送消息：\n"
                     + "内容：" + liveSendMsg.getExtraData());
-            Object liveMsgSendManager = LiveMsgSendManagerHook.getLiveMsgSendManager();
-            Object liveRoomData = LiveMsgSendManagerHook.liveRoomData;
-            Object liveRoomManager = LiveMsgSendManagerHook.getLiveRoomManager();
+            Object liveMsgSendManager = LiveMsgSendManagerHook.getInstance().getLiveMsgSendManager();
+            Object liveRoomData = LiveMsgSendManagerHook.getInstance().getLiveRoomData();
+            Object liveRoomManager = LiveMsgSendManagerHook.getInstance().getLiveRoomManager();
             Log.d("BluedHook", "liveMsgSendManager：" + liveMsgSendManager);
             Log.d("BluedHook", "liveRoomManager：" + liveRoomManager);
             Log.d("BluedHook", "liveRoomData：" + liveRoomData);
-            Log.d("BluedHook", "mainLid：" + LiveMsgSendManagerHook.mainLid);
-            LiveMsgSendManagerHook.startSendMsg(liveSendMsg.getExtraData());
+            Log.d("BluedHook", "mainLid：" + LiveMsgSendManagerHook.getInstance().getMainLid());
+            LiveMsgSendManagerHook.getInstance().startSendMsg(liveSendMsg.getExtraData());
 //            XposedHelpers.setLongField(liveRoomData, "lid", 39066492);
 //            XposedHelpers.callMethod(liveRoomManager, "a", liveRoomData);
 //            long senderLid = XposedHelpers.getLongField(liveRoomData, "lid");
