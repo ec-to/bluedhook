@@ -11,7 +11,6 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,13 +20,11 @@ import de.robv.android.xposed.XposedHelpers;
 public class LiveMultiPKItemViewHook {
     private final ClassLoader classLoader;
     private static LiveMultiPKItemViewHook instance;
-    private final WeakReference<Context> contextRef;
     private final XModuleResources modRes;
     private final HashMap<String, MsgSenderAnchor> hmSendMsgAnchor;
     private boolean isMultiPkStart = false;
 
     private LiveMultiPKItemViewHook(Context context, XModuleResources modRes) {
-        this.contextRef = new WeakReference<>(context);
         this.classLoader = context.getClassLoader();
         this.modRes = modRes;
         hmSendMsgAnchor = new HashMap<>();

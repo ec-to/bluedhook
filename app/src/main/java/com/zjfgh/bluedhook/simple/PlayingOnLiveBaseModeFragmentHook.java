@@ -49,7 +49,6 @@ public class PlayingOnLiveBaseModeFragmentHook {
     private volatile long liveMessageTime;
     private short isFirstConnect = 1;// 用于标记是否是第一次连接弹幕消息
     private boolean isWatchingLive = false; // 用于标记是否正在观看直播
-    private Timer timer;
     private Object liveRoomManager;
     private static final long SEND_LIKE_DELAY = 0;
     private static final long SEND_LIKE_INTERVAL = 300;
@@ -83,7 +82,7 @@ public class PlayingOnLiveBaseModeFragmentHook {
 
     // 启动定时器
     public void startTimer() {
-        timer = new Timer();
+        Timer timer = new Timer();
         //Log.d("BluedHook", "收到消息->等待首次连接弹幕消息服务...");
         // 每隔10秒执行一次
         TimerTask timerTask = new TimerTask() {
@@ -111,14 +110,6 @@ public class PlayingOnLiveBaseModeFragmentHook {
         };
         // 延迟0ms后执行，每隔1000ms执行一次
         timer.schedule(timerTask, 5000, 5000);
-    }
-
-    // 停止定时器
-    public void stopTimer() {
-        if (timer != null) {
-            timer.cancel();
-            timer = null;
-        }
     }
 
     public void chattingModelHook() {
@@ -175,7 +166,7 @@ public class PlayingOnLiveBaseModeFragmentHook {
                             liveMsgListRef.get().addView(llLiveGiftTips, 0);
                             @SuppressLint("DiscouragedApi") int rl_top_info_rootID = appContextRef.get().getResources().getIdentifier("rl_top_info_root", "id", appContextRef.get().getPackageName());
                             ViewGroup rl_top_info_root = view.findViewById(rl_top_info_rootID);
-                            int live_operation_viewID = appContextRef.get().getResources().getIdentifier("live_operation_view", "id", appContextRef.get().getPackageName());
+                            @SuppressLint("DiscouragedApi") int live_operation_viewID = appContextRef.get().getResources().getIdentifier("live_operation_view", "id", appContextRef.get().getPackageName());
                             TagLayout firstTg = new TagLayout(appContextRef.get());
                             firstTg.setPadding(0, ModuleTools.dpToPx(10), 0, 0);
                             firstTg.setFirstMarginStartSize(10);
@@ -508,71 +499,6 @@ public class PlayingOnLiveBaseModeFragmentHook {
                                     Log.d("BluedHook", jsonObject.toString());
                                     BluedHook.wsServerManager.broadcastMessage(jsonObject.toString());
                                 }
-//                                LiveMessageParser liveMessageParser = new LiveMessageParser();
-//                                LiveMessageParser.ParseResult parseResult = liveMessageParser.parse(contents);
-//                                Log.i("BluedHook", "飘屏类型 -> " + parseResult.getMessageType() + "|" + parseResult.getCharSequence() + "|" + parseResult.getKeywords().toString());
-//                                if (parseResult.getMessageType() == LiveMessageParser.MessageType.MULTIPLIER_REWARD) {
-//                                    // 只有关键字是3个的时候，才是倍数奖励飘屏
-//                                    if (parseResult.getKeywords().size() == 3) {
-//                                        // 处理倍数奖励飘屏
-//                                        String rewardMultiplier = parseResult.getKeywords().get(1);
-//                                        String rewardBean = parseResult.getKeywords().get(2);
-//                                        //计算幸运礼物本身的价值
-//                                        int LuckyGiftsBean = Integer.parseInt(rewardBean) / Integer.parseInt(rewardMultiplier);
-//                                        switch (LuckyGiftsBean) {
-//                                            case 4:
-//                                                //幸运手镯
-//                                                ModuleTools.writeFile("抽奖_幸运手镯_飘屏记录.txt", parseResult.getCharSequence());
-//                                                Log.e("BluedHook", "抽奖_幸运手镯_飘屏记录：" + parseResult.getCharSequence());
-//                                                break;
-//                                            case 12:
-//                                                //幸运魔法棒
-//                                                ModuleTools.writeFile("抽奖_幸运魔法棒_飘屏记录.txt", parseResult.getCharSequence());
-//                                                Log.e("BluedHook", "抽奖_幸运魔法棒_飘屏记录：" + parseResult.getCharSequence());
-//                                                break;
-//                                            case 36:
-//                                                //幸运魔镜
-//                                                ModuleTools.writeFile("抽奖_幸运魔镜_飘屏记录.txt", parseResult.getCharSequence());
-//                                                Log.e("BluedHook", "抽奖_幸运魔镜_飘屏记录：" + parseResult.getCharSequence());
-//                                                break;
-//                                            default:
-//                                                // 其他倍数奖励飘屏
-//                                                ModuleTools.writeFile("抽奖_其他倍数奖励_飘屏记录.txt", parseResult.getCharSequence());
-//                                                Log.e("BluedHook", "抽奖_其他倍数奖励_飘屏记录：" + parseResult.getCharSequence());
-//                                                break;
-//                                        }
-//                                    }
-//                                }
-//                                if (parseResult.getMessageType() == LiveMessageParser.MessageType.CHAMELEON_LIFE) {
-//                                    // 处理百变人生飘屏
-//                                    ModuleTools.writeFile("百变人生_208_飘屏记录.txt", parseResult.getCharSequence());
-//                                    Log.e("BluedHook", "百变人生_208_飘屏记录：" + parseResult.getCharSequence());
-//                                }
-//                                if (parseResult.getMessageType() == LiveMessageParser.MessageType.A_DESERT_DREAM) {
-//                                    // 处理一梦敦煌飘屏
-//                                    ModuleTools.writeFile("一梦敦煌_168_飘屏记录.txt", parseResult.getCharSequence());
-//                                    Log.e("BluedHook", "一梦敦煌_168_飘屏记录：" + parseResult.getCharSequence());
-//                                }
-//                                if (parseResult.getMessageType() == LiveMessageParser.MessageType.HOLY_SWORDSMAN) {
-//                                    // 处理神圣剑士飘屏
-//                                    ModuleTools.writeFile("神圣剑士_58_飘屏记录.txt", parseResult.getCharSequence());
-//                                    Log.e("BluedHook", "神圣剑士_58_飘屏记录：" + parseResult.getCharSequence());
-//                                }
-//                                if (parseResult.getMessageType() == LiveMessageParser.MessageType.PRIMARY_TREASURE) {
-//                                    // 处理初级宝藏飘屏
-//                                    ModuleTools.writeFile("初级宝藏_10_飘屏记录.txt", parseResult.getCharSequence());
-//                                    Log.e("BluedHook", "初级宝藏_10_飘屏记录：" + parseResult.getCharSequence());
-//                                }
-//                                if (parseResult.getMessageType() == LiveMessageParser.MessageType.ADVANCED_TREASURE) {
-//                                    // 处理高级宝藏飘屏
-//                                    ModuleTools.writeFile("高级宝藏_200_飘屏记录.txt", parseResult.getCharSequence());
-//                                    Log.e("BluedHook", "高级宝藏_200_飘屏记录：" + parseResult.getCharSequence());
-//                                }
-//                                if (parseResult.getMessageType() == LiveMessageParser.MessageType.GLOWING_TREASURE) {
-//                                    // 处理璀璨宝藏飘屏
-//                                    ModuleTools.writeFile("璀璨宝藏_500_飘屏记录.txt", parseResult.getCharSequence());
-//                                    Log.e("BluedHook", "璀璨宝藏_500_飘屏记录：" + parseResult.getCharSequence());
-//                                }
                             }
                         }
                         if (typeValue == 262) {
@@ -866,10 +792,6 @@ public class PlayingOnLiveBaseModeFragmentHook {
             Log.d("BluedHook", "liveRoomData：" + liveRoomData);
             Log.d("BluedHook", "mainLid：" + LiveMsgSendManagerHook.getInstance().getMainLid());
             LiveMsgSendManagerHook.getInstance().startSendMsg(liveSendMsg.getExtraData());
-//            XposedHelpers.setLongField(liveRoomData, "lid", 39066492);
-//            XposedHelpers.callMethod(liveRoomManager, "a", liveRoomData);
-//            long senderLid = XposedHelpers.getLongField(liveRoomData, "lid");
-//            Log.d("BluedHook", "senderLid：" + senderLid);
         }
     }
 
