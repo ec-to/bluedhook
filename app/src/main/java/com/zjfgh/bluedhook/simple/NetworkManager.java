@@ -61,6 +61,10 @@ public class NetworkManager {
         return "https://www.kdocs.cn/api/v3/ide/file/cfPwN1X4EwjS/script/V2-5yNhJpC575PN5hJNUPnhs/sync_task";
     }
 
+    public static String getUsersTicktocks(String uid, int page) {
+        return "https://argo.blued.cn/ticktocks/users/" + uid + "/timeline?lot=0&size=20&page=" + page + "&lat=0";
+    }
+
     public static String getBluedUserCardAPI(String uid) {
         return "https://live.blued.cn/live/user/card?uid=" + uid + "&anchor=0";
     }

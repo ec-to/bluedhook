@@ -9,7 +9,9 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.os.Environment;
 import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -31,20 +33,24 @@ import com.zjfgh.bluedhook.simple.module.UserCardResponse;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.locationtech.proj4j.BasicCoordinateTransform;
-import org.locationtech.proj4j.CRSFactory;
-import org.locationtech.proj4j.CoordinateReferenceSystem;
-import org.locationtech.proj4j.CoordinateTransform;
-import org.locationtech.proj4j.ProjCoordinate;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedHelpers;
@@ -123,9 +129,6 @@ public class UserInfoFragmentNewHook {
                                 try {
                                     // 假设jsonString是你的JSON字符串
                                     JSONObject response1 = new JSONObject(response.body().string());
-                                    // 解析code和message
-                                    int code = response1.getInt("code");
-                                    String message = response1.getString("message");
                                     // 解析data数组
                                     JSONArray dataArray = response1.getJSONArray("data");
                                     if (dataArray.length() > 0) {
@@ -133,12 +136,7 @@ public class UserInfoFragmentNewHook {
                                         int albumBanSave = dataObj.getInt("album_ban_save");
                                         int feedPicBanSave = dataObj.getInt("feed_pic_ban_save");
                                         if (albumBanSave > 0 || feedPicBanSave > 0) {
-                                            tlTitle.post(new Runnable() {
-                                                @Override
-                                                public void run() {
-                                                    tlTitle.addTextView("相册保护已解除", 9, modRes.getDrawable(R.drawable.bg_gradient_orange, null));
-                                                }
-                                            });
+                                            tlTitle.post(() -> tlTitle.addTextView("相册保护已解除", 9, modRes.getDrawable(R.drawable.bg_gradient_orange, null)));
                                         }
                                     }
                                 } catch (JSONException e) {
@@ -203,6 +201,12 @@ public class UserInfoFragmentNewHook {
                                 ll_all_basic_info.requestLayout();
                             });
                             Button userInfoExtraLocate = userInfoFragmentNewExtra.findViewById(R.id.user_locate_bt);
+                            Button btDownloadUserTicktocks = userInfoFragmentNewExtra.findViewById(R.id.bt_download_user_ticktocks);
+                            btDownloadUserTicktocks.setBackground(modRes.getDrawable(R.drawable.bg_tech_tag, null));
+                            UserTicktocksPar userTickTocksPar = new UserTicktocksPar(btDownloadUserTicktocks, uid, name, 1);
+                            userTickTocksPar.btDownloadTicktocks = btDownloadUserTicktocks;
+                            btDownloadUserTicktocks.setTag(userTickTocksPar);
+                            btDownloadUserTicktocks.setOnClickListener(btDownloadUserTicktocksOnClick);
                             if (isHideLastDistance == 1) {
                                 userInfoExtraLocate.setVisibility(View.GONE);
                             }
@@ -225,20 +229,14 @@ public class UserInfoFragmentNewHook {
                                 rotateAnim.setDuration(800);
                                 rotateAnim.setInterpolator(new LinearInterpolator());
                                 rotateAnim.setRepeatCount(ObjectAnimator.INFINITE);
-                                ibvClean.setOnClickListener(new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View v) {
-                                        startRefreshAnimation();
+                                ibvClean.setOnClickListener(v1 -> {
+                                    startRefreshAnimation();
 
-                                        // 模拟3秒后刷新完成
-                                        handler.postDelayed(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                aMapHelper.clearAllOverlays();
-                                                stopRefreshAnimation();
-                                            }
-                                        }, 500);
-                                    }
+                                    // 模拟3秒后刷新完成
+                                    handler.postDelayed(() -> {
+                                        aMapHelper.clearAllOverlays();
+                                        stopRefreshAnimation();
+                                    }, 500);
                                 });
                                 View aMapView = aMapHelper.createMapView();
                                 llAMap.addView(aMapView);
@@ -265,128 +263,112 @@ public class UserInfoFragmentNewHook {
                                 aMapHelper.onResume();
                                 aMapHelper.moveCamera(initialLat, initialLng, 5f);
                                 aMapHelper.addMarker(initialLat, initialLng, "天安门");
-                                tvAutoLocation.setOnClickListener(new View.OnClickListener() {
-                                    @Override
-                                    public void onClick(View v) {
-                                        if (tvAutoLocation.getText().equals("自动追踪中...")) {
-                                            return;
-                                        } else {
-                                            tvAutoLocation.setText("自动追踪中...");
+                                tvAutoLocation.setOnClickListener(v2 -> {
+                                    if (tvAutoLocation.getText().equals("自动追踪中...")) {
+                                        return;
+                                    } else {
+                                        tvAutoLocation.setText("自动追踪中...");
+                                    }
+                                    NetworkManager.getInstance().getAsync(NetworkManager.getBluedSetUsersLocationApi(initialLat, initialLng), AuthManager.auHook(false, classLoader, fl_content.getContext()), new Callback() {
+                                        @Override
+                                        public void onFailure(@NonNull Call call, @NonNull IOException e) {
+
                                         }
-                                        NetworkManager.getInstance().getAsync(NetworkManager.getBluedSetUsersLocationApi(initialLat, initialLng), AuthManager.auHook(false, classLoader, fl_content.getContext()), new Callback() {
-                                            @Override
-                                            public void onFailure(@NonNull Call call, @NonNull IOException e) {
 
-                                            }
+                                        @Override
+                                        public void onResponse(@NonNull Call call, @NonNull Response response) {
+                                            NetworkManager.getInstance().getAsync(NetworkManager.getBluedUserBasicAPI(uid), AuthManager.auHook(false, classLoader, fl_content.getContext()), new Callback() {
+                                                @Override
+                                                public void onFailure(@NonNull Call call, @NonNull IOException e) {
 
-                                            @Override
-                                            public void onResponse(@NonNull Call call, @NonNull Response response) {
-                                                NetworkManager.getInstance().getAsync(NetworkManager.getBluedUserBasicAPI(uid), AuthManager.auHook(false, classLoader, fl_content.getContext()), new Callback() {
-                                                    @Override
-                                                    public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                                                }
 
-                                                    }
+                                                @Override
+                                                public void onResponse(@NonNull Call call, @NonNull Response response) {
+                                                    try {
+                                                        if (response.code() == 200 && !response.body().toString().isEmpty()) {
+                                                            String jsonStr = response.body().string();
+                                                            JSONObject json = new JSONObject(jsonStr);
+                                                            String message = json.getString("message");
+                                                            Log.i("BluedHook", "message：" + message);
+                                                            JSONArray dataArray = json.getJSONArray("data");
+                                                            if (dataArray.length() > 0) {
+                                                                JSONObject userData = dataArray.getJSONObject(0);
+                                                                int isHideDistance = userData.getInt("is_hide_distance");
+                                                                double distanceKm = userData.getDouble("distance");
+                                                                if (isHideDistance == 0) {
+                                                                    aMapHelper.addCircle(initialLat, initialLat, DistanceConverter.kmToMeters(distanceKm), "#003399FF", "#603399FF");
+                                                                    tvUserWithSelfDistance.post(() -> {
+                                                                        tvUserWithSelfDistance.setText("当前虚拟距离：" + DistanceConverter.formatDistance(distanceKm));
+                                                                        tvUserWithSelfDistance.setVisibility(View.VISIBLE);
+                                                                    });
+                                                                    LocationTracker tracker = new LocationTracker(aMapHelper, uid, classLoader, fl_content);
+                                                                    // 开始追踪并设置回调
+                                                                    tracker.startTracking(initialLat, initialLng, distanceKm, 15, new LocationTracker.LocationTrackingCallback() {
+                                                                        @Override
+                                                                        public void onInitialLocation(double lat, double lng, double distanceKm) {
+                                                                            Log.d("LocationTracker", String.format("初始位置: %.6f, %.6f, 距离: %.3fkm", lat, lng, distanceKm));
+                                                                        }
 
-                                                    @Override
-                                                    public void onResponse(@NonNull Call call, @NonNull Response response) {
-                                                        try {
-                                                            if (response.code() == 200 && !response.body().toString().isEmpty()) {
-                                                                String jsonStr = response.body().string();
-                                                                JSONObject json = new JSONObject(jsonStr);
-                                                                String message = json.getString("message");
-                                                                Log.i("BluedHook", "message：" + message);
-                                                                JSONArray dataArray = json.getJSONArray("data");
-                                                                if (dataArray.length() > 0) {
-                                                                    JSONObject userData = dataArray.getJSONObject(0);
-                                                                    int isHideDistance = userData.getInt("is_hide_distance");
-                                                                    double distanceKm = userData.getDouble("distance");
-                                                                    if (isHideDistance == 0) {
-                                                                        aMapHelper.addCircle(initialLat, initialLat, DistanceConverter.kmToMeters(distanceKm), "#003399FF", "#603399FF");
-                                                                        tvUserWithSelfDistance.post(() -> {
-                                                                            tvUserWithSelfDistance.setText("当前虚拟距离：" + DistanceConverter.formatDistance(distanceKm));
-                                                                            tvUserWithSelfDistance.setVisibility(View.VISIBLE);
-                                                                        });
-                                                                        LocationTracker tracker = new LocationTracker(aMapHelper, uid, classLoader, fl_content);
-                                                                        // 开始追踪并设置回调
-                                                                        tracker.startTracking(initialLat, initialLng, distanceKm, 15, new LocationTracker.LocationTrackingCallback() {
-                                                                            @Override
-                                                                            public void onInitialLocation(double lat, double lng, double distanceKm) {
-                                                                                Log.d("LocationTracker", String.format("初始位置: %.6f, %.6f, 距离: %.3fkm", lat, lng, distanceKm));
-                                                                            }
+                                                                        @Override
+                                                                        public void onProbeLocation(double lat, double lng) {
+                                                                            Log.d("LocationTracker", String.format("探测点位置: %.6f, %.6f", lat, lng));
+                                                                        }
 
-                                                                            @Override
-                                                                            public void onProbeLocation(double lat, double lng) {
-                                                                                Log.d("LocationTracker", String.format("探测点位置: %.6f, %.6f", lat, lng));
-                                                                            }
+                                                                        @Override
+                                                                        public void onProbeDistance(double distanceKm) {
+                                                                            Log.d("LocationTracker", String.format("探测点距离: %.3fkm", distanceKm));
+                                                                        }
 
-                                                                            @Override
-                                                                            public void onProbeDistance(double distanceKm) {
-                                                                                Log.d("LocationTracker", String.format("探测点距离: %.3fkm", distanceKm));
-                                                                            }
+                                                                        @Override
+                                                                        public void onIntersectionLocation(double lat, double lng) {
+                                                                            Log.d("LocationTracker", String.format("交点位置: %.6f, %.6f", lat, lng));
+                                                                        }
 
-                                                                            @Override
-                                                                            public void onIntersectionLocation(double lat, double lng) {
-                                                                                Log.d("LocationTracker", String.format("交点位置: %.6f, %.6f", lat, lng));
-                                                                            }
+                                                                        @Override
+                                                                        public void onIntersectionDistance(double lat, double lng, double distanceKm) {
+                                                                            Log.d("LocationTracker", String.format("交点距离: %.6f, %.6f, 距离: %.3fkm", lat, lng, distanceKm));
+                                                                        }
 
-                                                                            @Override
-                                                                            public void onIntersectionDistance(double lat, double lng, double distanceKm) {
-                                                                                Log.d("LocationTracker", String.format("交点距离: %.6f, %.6f, 距离: %.3fkm", lat, lng, distanceKm));
-                                                                            }
+                                                                        @Override
+                                                                        public void onNewCenterLocation(double lat, double lng, double distanceKm) {
+                                                                            tvLatitude.post(() -> {
+                                                                                tvLatitude.setText("纬度：" + lat);
+                                                                                tvLongitude.setText("经度：" + lng);
+                                                                                tvUserWithSelfDistance.setText("当前虚拟距离：" + DistanceConverter.formatDistance(distanceKm));
+                                                                            });
+                                                                            Log.d("LocationTracker", String.format("新中心点: %.6f, %.6f, 距离: %.3fkm", lat, lng, distanceKm));
+                                                                        }
 
-                                                                            @Override
-                                                                            public void onNewCenterLocation(double lat, double lng, double distanceKm) {
-                                                                                tvLatitude.post(new Runnable() {
-                                                                                    @Override
-                                                                                    public void run() {
-                                                                                        tvLatitude.setText("纬度：" + lat);
-                                                                                        tvLongitude.setText("经度：" + lng);
-                                                                                        tvUserWithSelfDistance.setText("当前虚拟距离：" + DistanceConverter.formatDistance(distanceKm));
-                                                                                    }
-                                                                                });
-                                                                                Log.d("LocationTracker", String.format("新中心点: %.6f, %.6f, 距离: %.3fkm", lat, lng, distanceKm));
-                                                                            }
+                                                                        @Override
+                                                                        public void onFinalLocation(double lat, double lng, double distanceKm) {
+                                                                            Log.d("LocationTracker", String.format("最终位置: %.6f, %.6f, 距离: %.3fkm", lat, lng, distanceKm));
+                                                                            tvLatitude.post(() -> {
+                                                                                tvLatitude.setText("经度：" + lat);
+                                                                                tvLongitude.setText("纬度：" + lng);
+                                                                                tvAutoLocation.setText("追踪完成");
+                                                                            });
 
-                                                                            @Override
-                                                                            public void onFinalLocation(double lat, double lng, double distanceKm) {
-                                                                                Log.d("LocationTracker", String.format("最终位置: %.6f, %.6f, 距离: %.3fkm", lat, lng, distanceKm));
-                                                                                tvLatitude.post(new Runnable() {
-                                                                                    @Override
-                                                                                    public void run() {
-                                                                                        tvLatitude.setText("经度：" + lat);
-                                                                                        tvLongitude.setText("纬度：" + lng);
-                                                                                        tvAutoLocation.setText("追踪完成");
-                                                                                    }
-                                                                                });
+                                                                        }
 
-                                                                            }
 
-                                                                            @NonNull
-                                                                            private CoordinateTransform getCoordinateTransform() {
-                                                                                CRSFactory crsFactory = new CRSFactory();
-                                                                                CoordinateReferenceSystem wgs84 = crsFactory.createFromName("EPSG:4326"); // WGS84
-                                                                                CoordinateReferenceSystem gcj02 = crsFactory.createFromParameters("GCJ02", "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext +no_defs");
-                                                                                return new BasicCoordinateTransform(wgs84, gcj02);
-                                                                            }
-
-                                                                            @Override
-                                                                            public void onError(String message) {
-                                                                                Log.e("LocationTracker", "错误: " + message);
-                                                                            }
-                                                                        });
-                                                                    } else {
-                                                                        Log.i("BluedHook", "用户隐藏了距离信息");
-                                                                    }
+                                                                        @Override
+                                                                        public void onError(String message) {
+                                                                            Log.e("LocationTracker", "错误: " + message);
+                                                                        }
+                                                                    });
+                                                                } else {
+                                                                    Log.i("BluedHook", "用户隐藏了距离信息");
                                                                 }
                                                             }
-                                                        } catch (Exception e) {
-                                                            Log.e("UserInfoFragmentNewHook", "Hook位置\nhookAnchorMonitorAddButton.获取用户距离异常：\n" + e);
                                                         }
+                                                    } catch (Exception e) {
+                                                        Log.e("UserInfoFragmentNewHook", "Hook位置\nhookAnchorMonitorAddButton.获取用户距离异常：\n" + e);
                                                     }
-                                                });
-                                            }
-                                        });
-                                    }
+                                                }
+                                            });
+                                        }
+                                    });
                                 });
                                 aMapHelper.setOnMapClickListener((lat, lng) -> {
                                     aMapHelper.addMarker(lat, lng, "纬度：" + lat + "\n" +
@@ -602,6 +584,13 @@ public class UserInfoFragmentNewHook {
                 });
     }
 
+    View.OnClickListener btDownloadUserTicktocksOnClick = v -> {
+        // 从View的Tag中获取用户参数（包含用户ID和当前页码）
+        UserTicktocksPar userTickTocksPar = (UserTicktocksPar) v.getTag();
+        // 开始下载该用户的动态
+        downloadUserTicktocks(userTickTocksPar);
+    };
+
     private void startRefreshAnimation() {
         // 启动旋转动画
         rotateAnim.start();
@@ -658,7 +647,7 @@ public class UserInfoFragmentNewHook {
                 String.class,
                 new XC_MethodHook() {
                     @Override
-                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    protected void beforeHookedMethod(MethodHookParam param) {
                         String albumBanSave = (String) param.args[1];
                         String feedPicBanSave = (String) param.args[2];
                         boolean hasHook = false;
@@ -711,9 +700,8 @@ public class UserInfoFragmentNewHook {
                 String.class,
                 new XC_MethodHook() {
                     @Override
-                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    protected void beforeHookedMethod(MethodHookParam param) {
                         File file = (File) param.args[0];
-                        Log.i("BluedHook", "paramparam" + param.args[0]);
                         // 如果是图片文件(非GIF)
                         if (!ChatHelperV4.a(file)) {
                             Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath());
@@ -736,5 +724,207 @@ public class UserInfoFragmentNewHook {
             throw new IllegalStateException("Context was garbage collected");
         }
         return context;
+    }
+
+    /**
+     * 递归下载用户动态的方法
+     *
+     * @param userTicktocksPar 包含用户ID和当前页码的参数对象
+     */
+    private void downloadUserTicktocks(UserTicktocksPar userTicktocksPar) {
+        NetworkManager.getInstance().getAsync(
+                // 构造请求URL（传入用户ID和当前页码）
+                NetworkManager.getUsersTicktocks(userTicktocksPar.uid, userTicktocksPar.page),
+                // 添加认证钩子
+                AuthManager.auHook(false, AppContainer.getInstance().getClassLoader(), AppContainer.getInstance().getBluedContext()),
+                new Callback() {
+                    @Override
+                    public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                        // 请求失败处理（可以添加重试逻辑）
+                        Log.e("BluedHook", "下载失败 用户ID:" + userTicktocksPar.uid +
+                                " 用户昵称:" + userTicktocksPar.userName +
+                                " 页码:" + userTicktocksPar.page, e);
+                    }
+
+                    @Override
+                    public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                        if (response.body() != null) {
+                            // 获取响应内容
+                            String responseBody = response.body().string();
+                            Log.d("BluedHook", "用户ID:" + userTicktocksPar.uid +
+                                    " 用户昵称:" + userTicktocksPar.userName +
+                                    " 页码:" + userTicktocksPar.page + " 响应:" + responseBody);
+                            UserTicktocks userTicktocks = JSON.parseObject(responseBody, UserTicktocks.class);
+                            List<UserTicktocks.DataUserTicktocks> dataUserTicktocksList = userTicktocks.getData();
+                            // 遍历用户动态列表
+                            for (UserTicktocks.DataUserTicktocks item : dataUserTicktocksList) {
+                                String feedId = item.getFeed_id();  // 获取动态ID
+
+                                // 处理图片动态
+                                if (item.getIs_videos() == 0) {
+                                    for (String imageUrl : item.getFeed_pics()) {
+                                        Log.e("BluedHook", "仅图片->feedId=" + feedId + " feed_pic=" + imageUrl);
+                                        // 下载图片文件
+                                        downloadMediaFile(userTicktocksPar.btDownloadTicktocks, userTicktocksPar.uid, userTicktocksPar.userName, imageUrl, "image");
+                                    }
+                                }
+                                // 处理视频动态
+                                else if (item.getIs_videos() == 1) {
+                                    for (String videoUrl : item.getFeed_videos()) {
+                                        // 检查视频URL是否以.mp4结尾
+                                        if (!videoUrl.toLowerCase().endsWith(".mp4")) {
+                                            Log.w("BluedHook", "跳过非MP4视频->feedId=" + feedId + " URL=" + videoUrl);
+                                            continue;  // 跳过当前循环
+                                        }
+
+                                        Log.e("BluedHook", "带视频->feedId=" + feedId + " feed_videos=" + videoUrl);
+                                        // 下载视频文件
+                                        downloadMediaFile(userTicktocksPar.btDownloadTicktocks, userTicktocksPar.uid, userTicktocksPar.userName, videoUrl, "video");
+                                    }
+                                }
+                            }
+                            if (userTicktocks.getExtra().getHasmore() == 1) {
+                                // 创建新的参数对象（页码+1）
+                                UserTicktocksPar nextPageParams = new UserTicktocksPar(userTicktocksPar.btDownloadTicktocks,
+                                        userTicktocksPar.uid,
+                                        userTicktocksPar.userName,
+                                        userTicktocksPar.page + 1
+                                );
+
+                                // 添加短暂延迟避免请求过于频繁（可选）
+                                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                                    downloadUserTicktocks(nextPageParams); // 递归下载下一页
+                                }, 1000); // 延迟1000毫秒
+                            } else {
+                                if (userTicktocksPar != null) {
+                                    userTicktocksPar.btDownloadTicktocks.post(() -> userTicktocksPar.btDownloadTicktocks.setText("下载完成"));
+                                }
+                            }
+                        }
+                    }
+                }
+        );
+    }
+
+    /**
+     * 从URL中提取时间戳和编号并转换为指定格式
+     * 支持两种格式：
+     * 1. ..._时间戳_编号.ext → [年月日]时分秒_编号
+     * 2. ..._编号_时间戳.ext → [年月日]时分秒_编号
+     */
+    private String convertUrlTimestamp(String uid, String userName, String url) {
+        try {
+            // 分割URL获取所有数字部分
+            String[] parts = url.split("[_.]");
+
+            // 确保有足够的部分且最后两个数字部分是我们需要的
+            if (parts.length >= 3) {
+                String lastNumber = parts[parts.length - 2];  // 最后一个数字部分
+                String secondLastNumber = parts[parts.length - 3];  // 倒数第二个数字部分
+
+                // 判断哪个是时间戳（时间戳通常为10位数字）
+                String timestampStr;
+                String middleNumber;
+
+                if (lastNumber.length() == 10 && secondLastNumber.length() <= 5) {
+                    // 格式：..._编号_时间戳.ext
+                    timestampStr = lastNumber;
+                    middleNumber = secondLastNumber;
+                } else if (secondLastNumber.length() == 10 && lastNumber.length() <= 5) {
+                    // 格式：..._时间戳_编号.ext
+                    timestampStr = secondLastNumber;
+                    middleNumber = lastNumber;
+                } else {
+                    // 无法确定，默认使用最后一个数字作为时间戳
+                    timestampStr = lastNumber;
+                    middleNumber = "";
+                }
+
+                // 转换时间戳（使用 SimpleDateFormat）
+                long timestamp = Long.parseLong(timestampStr) * 1000L;
+                SimpleDateFormat sdf = new SimpleDateFormat("[yyyyMMdd]HHmmss");
+                sdf.setTimeZone(TimeZone.getDefault()); // 使用系统默认时区
+                String dateStr = sdf.format(new Date(timestamp));
+                // 如果有中间编号就加上
+                return middleNumber.isEmpty() ? dateStr + "_" + userName + "_" + uid : dateStr + "_" + middleNumber + "_" + userName + "_" + uid;
+            }
+        } catch (Exception e) {
+            Log.e("BluedHook", "图片或视频链接解析失败!" + e);
+        }
+        // 如果解析失败，使用当前时间
+        SimpleDateFormat sdf = new SimpleDateFormat("[yyyyMMdd]HHmmss");
+        return sdf.format(new Date());
+    }
+
+    /**
+     * 下载媒体文件到下载目录
+     *
+     * @param fileUrl 文件URL
+     * @param type    文件类型（"image"或"video"）
+     */
+    @SuppressLint("SetTextI18n")
+    private void downloadMediaFile(Button btDownloadTicktocks, String uid, String userName, String fileUrl, String type) {
+        try {
+            // 创建下载目录（/Downloads/BluedDownloads/uid）
+            File downloadDir = new File(
+                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                    "BluedDownloads/" + uid + "_" + userName);
+            if (!downloadDir.exists()) {
+                boolean isDirCreated = downloadDir.mkdirs();
+                if (!isDirCreated) {
+                    Log.e("BluedHook", "创建文件夹失败: " + downloadDir.getAbsolutePath());
+                    if (btDownloadTicktocks != null) {
+                        btDownloadTicktocks.setText("创建文件夹失败: " + downloadDir.getAbsolutePath());
+                    }
+                    return;
+                }
+            }
+
+            // 确定文件扩展名
+            String extension = type.equals("video") ? ".mp4" : ".png";
+            // 生成格式化后的文件名
+            String fileName = convertUrlTimestamp(uid, userName, fileUrl) + extension;
+            // 创建文件输出流
+            File outputFile = new File(downloadDir, fileName);
+            String realUrl = type.equals("video") ? fileUrl : fileUrl + "!o.png";
+            URL url = new URL(realUrl);
+
+            // 开始下载
+            try (InputStream in = url.openStream();
+                 FileOutputStream out = new FileOutputStream(outputFile)) {
+
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, bytesRead);  // 分段写入文件
+                }
+                Log.i("BluedHook", "下载成功: " + fileName);
+                if (btDownloadTicktocks != null) {
+                    btDownloadTicktocks.post(() -> btDownloadTicktocks.setText("下载成功: " + fileName));
+                }
+            }
+        } catch (Exception e) {
+            Log.e("BluedHook", "下载失败: " + e.getMessage());
+            if (btDownloadTicktocks != null) {
+                btDownloadTicktocks.post(() -> btDownloadTicktocks.setText("下载失败: " + e.getMessage()));
+
+            }
+
+        }
+    }
+
+    // 用户动态请求参数类示例
+    static class UserTicktocksPar {
+        Button btDownloadTicktocks;
+        String uid;  // 用户ID
+        String userName;
+        int page;    // 当前页码
+
+        public UserTicktocksPar(Button btDownloadTicktocks, String uid, String userName, int page) {
+            this.btDownloadTicktocks = btDownloadTicktocks;
+            this.uid = uid;
+            this.userName = userName;
+            this.page = page;
+        }
     }
 }
