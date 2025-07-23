@@ -88,6 +88,13 @@ public class PlayingOnLiveBaseModeFragmentHook {
         TimerTask timerTask = new TimerTask() {
             @Override
             public void run() {
+                SettingItem settingItem = SQLiteManagement.getInstance().getSettingByFunctionId(SettingsViewCreator.REC_HEW_HORN);
+                if (!settingItem.isSwitchOn()) {
+                    // 停止计时
+                    this.cancel();  // 取消当前TimerTask
+                    timer.cancel(); // 取消Timer
+                    return;
+                }
                 if (isFirstConnect != 1) {
                     // 每隔10秒执行一次
                     if (!isWatchingLive) {
@@ -446,6 +453,7 @@ public class PlayingOnLiveBaseModeFragmentHook {
                     Object liveMessage = XposedHelpers.callMethod(any, "unpack", LiveMessage);
                     // 处理 LiveMessage
                     if (liveMessage != null) {
+                        SettingItem settingItem = SQLiteManagement.getInstance().getSettingByFunctionId(SettingsViewCreator.REC_HEW_HORN);
                         liveMessageTime = System.currentTimeMillis();
                         Log.d("BluedHook", "收到消息->直播间消息，liveMessageTime：" + liveMessageTime);
                         Object msgExtra = XposedHelpers.callMethod(liveMessage, "getExtra");
@@ -471,7 +479,9 @@ public class PlayingOnLiveBaseModeFragmentHook {
                                 Object profile = XposedHelpers.callMethod(liveMessage, "getProfile");
                                 String name = (String) XposedHelpers.callMethod(profile, "getName");
                                 Log.i("BluedHook", "收到消息->直播间消息：" + name + " 退出了直播间");
-                                ModuleTools.showBluedToast(name + " 退出了直播间");
+                                if (settingItem.isSwitchOn()) {
+                                    ModuleTools.showBluedToast(name + " 退出了直播间");
+                                }
                                 if (leaveLiveMsgSend != null && (boolean) leaveLiveMsgSend.getTag() && isWatchingLive) {
                                     LiveMsgSendManagerHook.getInstance().startSendMsg(name + " 退出了直播间");
                                     Log.d("BluedHook", "收到消息->直播间消息：" + name + " 退出了直播间，并发送到公屏。");
@@ -491,7 +501,9 @@ public class PlayingOnLiveBaseModeFragmentHook {
                             if (isHewHorn) {
                                 Object hewHorn = XposedHelpers.callMethod(msgExtra, "unpack", NewHorn);
                                 String contents = (String) XposedHelpers.callMethod(hewHorn, "getContents");
-                                ModuleTools.writeFile("所有飘屏记录.txt", contents);
+                                if (settingItem.isSwitchOn()) {
+                                    ModuleTools.writeFile("所有飘屏记录.txt", contents);
+                                }
                                 if (BluedHook.wsServerManager.isServerRunning()) {
                                     JSONObject jsonObject = new JSONObject();
                                     jsonObject.put("msgType", typeValue);
@@ -538,7 +550,9 @@ public class PlayingOnLiveBaseModeFragmentHook {
                                 Log.i("BluedHook", "收到消息->标题: " + title);
                                 Log.i("BluedHook", "收到消息->主播端提示: " + message);
                                 Log.i("BluedHook", "收到消息->观众端提示: " + audienceMessage);
-                                reConnectLive();
+                                if (settingItem.isSwitchOn()) {
+                                    reConnectLive();
+                                }
                             }
                         }
                     }
@@ -575,7 +589,8 @@ public class PlayingOnLiveBaseModeFragmentHook {
                 Class<?> LiveRoomManager = XposedHelpers.findClass("com.blued.android.module.live_china.manager.LiveRoomManager", classLoader);
                 liveRoomManager = XposedHelpers.callStaticMethod(LiveRoomManager, "a");
                 long lid = (long) XposedHelpers.callMethod(liveRoomManager, "d");
-                if (lid <= 0) {
+                SettingItem settingItem = SQLiteManagement.getInstance().getSettingByFunctionId(SettingsViewCreator.REC_HEW_HORN);
+                if (lid <= 0 && settingItem.isSwitchOn()) {
                     Log.d("BluedHook", "直播ID为" + lid + "，拉取推荐直播数据");
                     Response response = NetworkManager.getInstance().get(NetworkManager.getUsersRecommendApi(), AuthManager.auHook(false, classLoader, appContextRef.get()));
                     try {
@@ -606,6 +621,10 @@ public class PlayingOnLiveBaseModeFragmentHook {
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                 super.beforeHookedMethod(param);
                 Log.i("BluedHook", "收到消息->直播间消息，类型：手动退出直播间");
+                SettingItem settingItem = SQLiteManagement.getInstance().getSettingByFunctionId(SettingsViewCreator.REC_HEW_HORN);
+                if (!settingItem.isSwitchOn()) {
+                    return;
+                }
                 isWatchingLive = false;
                 sendLikeStop();
                 liveAutoSendMsgStop();
@@ -795,6 +814,17 @@ public class PlayingOnLiveBaseModeFragmentHook {
         }
     }
 
+    public void stopConnectLive() {
+        //调用关闭直播间的方法
+        Class<?> LiveFloatManagerClass = XposedHelpers.findClass(
+                "com.blued.android.module.live_china.manager.LiveFloatManager",
+                AppContainer.getInstance().getClassLoader());
+        Object liveFloatManager = XposedHelpers.callStaticMethod(LiveFloatManagerClass, "a");
+        XposedHelpers.callMethod(liveFloatManager, "p");
+    }
+
+    private long now_live;
+
     private void reConnectLive() {
         try {
             //从直播推荐列表获取新的直播间ID
@@ -804,12 +834,12 @@ public class PlayingOnLiveBaseModeFragmentHook {
             int code = jsonObject.getInt("code");
             if (code == 200) {
                 JSONArray data = jsonObject.getJSONArray("data");
-                long live = data.getJSONObject(0).getLong("live");
+                now_live = data.getJSONObject(0).getLong("live");
                 String anchorTitle = data.getJSONObject(0).getString("title");
                 //调用连接直播间的方法
                 Class<?> LiveRoomHttpUtils = XposedHelpers.findClass("com.blued.android.module.live_china.utils.LiveRoomHttpUtils", classLoader);
-                XposedHelpers.callStaticMethod(LiveRoomHttpUtils, "a", bluedUIHttpResponse, live, "", 3, 0);
-                Log.i("BluedHook", "收到消息->尝试连接新的 " + anchorTitle + " 的直播间，直播ID：" + live);
+                XposedHelpers.callStaticMethod(LiveRoomHttpUtils, "a", bluedUIHttpResponse, now_live, "", 3, 0);
+                Log.i("BluedHook", "收到消息->尝试连接新的 " + anchorTitle + " 的直播间，直播ID：" + now_live);
             }
         } catch (JSONException | IOException e) {
             Log.e("BluedHook", "reConnectLive->重新连接直播间失败", e);

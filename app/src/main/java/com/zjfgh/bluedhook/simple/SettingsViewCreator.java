@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +15,8 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import java.util.List;
+
+import de.robv.android.xposed.XposedHelpers;
 
 public class SettingsViewCreator {
     private final SQLiteManagement dbManager;
@@ -104,6 +107,14 @@ public class SettingsViewCreator {
                         } else {
                             BluedHook.wsServerManager.stopServer();
                         }
+                    }
+                } else if (setting.getFunctionId() == REC_HEW_HORN) {
+                    if (!setting.isSwitchOn()) {
+                        PlayingOnLiveBaseModeFragmentHook.getInstance(AppContainer.getInstance().getBluedContext(), AppContainer.getInstance().getModuleRes()).stopConnectLive();
+                        Log.e("BluedHook", "关闭了呗");
+                    } else {
+                        Log.e("BluedHook", "开启了呗");
+                        PlayingOnLiveBaseModeFragmentHook.getInstance(AppContainer.getInstance().getBluedContext(), AppContainer.getInstance().getModuleRes()).startTimer();
                     }
                 }
             });

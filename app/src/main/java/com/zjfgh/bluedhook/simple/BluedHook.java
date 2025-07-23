@@ -74,7 +74,7 @@ public class BluedHook implements IXposedHookLoadPackage, IXposedHookInitPackage
                             new XC_MethodHook() {
                                 @Override
                                 protected void beforeHookedMethod(MethodHookParam param) {
-                                    param.args[0] = 60; // 60fps
+                                    //param.args[0] = 60; // 60fps
                                     Log.d("BluedHook", "设置Zego帧率");
                                 }
                             }
@@ -89,7 +89,7 @@ public class BluedHook implements IXposedHookLoadPackage, IXposedHookInitPackage
                             new XC_MethodHook() {
                                 @Override
                                 protected void beforeHookedMethod(MethodHookParam param) {
-                                    param.args[0] = 100000; // 8000kbps
+                                    //param.args[0] = 1500000; // 8000kbps
                                     Log.d("BluedHook", "设置Zego比特率");
                                 }
                             }
